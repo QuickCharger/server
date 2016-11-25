@@ -1,0 +1,15 @@
+package net_protocol;
+
+message ProtobufTest
+{
+	required int32	required_int = 1;
+	repeated string repeated_str = 2;
+	optional int32	optional_int = 3;
+}
+
+message ProTest2
+{
+	required int32 required_int  = 1;
+	repeated string repeated_str = 2;
+	optional int32 optional_int  = 3;
+}
