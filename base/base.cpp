@@ -45,55 +45,25 @@ void ReadFile(const char* a_pFileName, std::string& a_strContext)
 	a_strContext = pContext;
 	free(pContext);
 }
-//
-//bool InitConfig(const char* a_pFileName, std::map<std::string, std::string>& a_mValue)
-//{
-//
-//	FILE *pFile;
-//	pFile = fopen(a_pFileName, "r");
-//	if (pFile == NULL)
-//	{
-//		setLastErr("Open file failed.");
-//		return false;
-//	}
-//
-//	fseek(pFile, 0L, SEEK_END);
-//	int nFileSize = ftell(pFile);
-//	char *pContext = (char *)malloc(nFileSize + 1);
-//	if (pContext == nullptr)
-//	{ 
-//		setLastErr("malloc failed.");
-//		return false;
-//	}
-//	fseek(pFile, 0L, SEEK_SET);
-//	fread(pContext, nFileSize, 1, pFile);
-//	pContext[nFileSize] = 0;
-//
-//	string str(pContext);
-//
-//	vector<string> vSplit;
-//	Func::SplitString(pContext, "\n", vSplit);
-//
-//	std::map<string, string> mValue;
-//
-//	for (auto it = vSplit.begin(); it != vSplit.end(); ++it)
-//	{
-//		string strNew = Func::Abandon(Func::Truncate(*it, '#'), ' ');
-//		vector<string> str;
-//		Func::SplitString(strNew, "=", str);
-//		if (str.size() == 2)
-//		{
-//			a_mValue[str[0]] = str[1];
-//		}
-//		cout << endl;
-//	}
-//
-//	return true;
-//}
 
-void InitConfig(const std::vector<std::string >& a_vContext, map<std::string, std::string>& a_mDefaultValue, map<std::string, std::pair<std::string, int>>& a_mServer)
+int InitConfig(const char* a_pFileName, std::map<std::string, std::string>& a_mDefaultValue, std::map<std::string, std::pair<std::string, int>>& a_mServer)
 {
-	for (auto it = a_vContext.begin(); it != a_vContext.end(); ++it)
+	std::string strConfigName = Func::Truncate(a_pFileName, '.') + ".cfg";
+	if (strConfigName.size() < 4)
+	{
+		return 1;
+	}
+	std::string strContext;
+	ReadFile(strConfigName.c_str(), strContext);
+	if (strContext.size() == 0)
+	{
+		return 2;
+	}
+
+	std::vector<std::string > vSplit;
+	Func::SplitString(strContext, "\n", vSplit);
+
+	for (auto it = vSplit.begin(); it != vSplit.end(); ++it)
 	{
 		std::vector<std::string > vSplit;
 		if (strncmp(it->c_str(), "set ", strlen("set ")) == 0)
@@ -142,4 +112,5 @@ void InitConfig(const std::vector<std::string >& a_vContext, map<std::string, st
 			a_mServer[strServerName] = make_pair(strIP, nPort);
 		}
 	}
+	return 0;
 }
