@@ -91,7 +91,8 @@ void LinkToServer(int a_nClientFD, short a_nEvent, void *a_pArg)
 		pConnect->SetServerName(it->first);
 		pConnect->SetServerIP(it->second.first);
 		pConnect->SetPort(it->second.second);
-		pConnect->Connect(true);
+		pConnect->SetAutoConnect(true);
+		pConnect->Connect();
 	}
 }
 
