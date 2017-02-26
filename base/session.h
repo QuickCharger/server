@@ -11,6 +11,7 @@ public:
 	CSession(event_base* a_pEventBase);
 	~CSession();
 
+	void InitSock();
 	void Connect();
 	void CloseSocket();
 	static void ReConnect(int a_nClientFD, short a_nEvent, void *a_pArg);

@@ -88,6 +88,7 @@ void LinkToServer(int a_nClientFD, short a_nEvent, void *a_pArg)
 	for (auto it = serverCfg->begin(); it != serverCfg->end(); ++it)
 	{
 		CSession *pConnect = new CSession(g_pEventBase);
+		pConnect->InitSock();
 		pConnect->SetServerName(it->first);
 		pConnect->SetServerIP(it->second.first);
 		pConnect->SetPort(it->second.second);

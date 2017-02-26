@@ -3,6 +3,13 @@
 #include <iostream>
 #include <time.h>
 
+#include <event2/bufferevent.h>
+#include <event2/buffer.h>
+#include <event2/listener.h>
+#include <event2/util.h>
+#include <event2/event.h>
+#include <functional>
+
 CSession::CSession(event_base* a_pEventBase)
 	: m_EventBase(a_pEventBase)
 	, m_Socket(0)
@@ -19,44 +26,67 @@ CSession::~CSession()
 	m_EventBase = nullptr;
 }
 
+void CSession::InitSock()
+{
+	if (m_Socket != 0)
+	{
+		closesocket(m_Socket);
+	}
+	m_Socket = socket(AF_INET, SOCK_STREAM, 0);
+}
+
 void CSession::Connect()
 {
-	if (m_Socket == 0)
-	{
-		m_Socket = socket(AF_INET, SOCK_STREAM, 0);
-	}
+	//InitSock();
 	SOCKADDR_IN addrSrv;
 	addrSrv.sin_addr.S_un.S_addr = inet_addr(m_strServerIP.c_str());
 	addrSrv.sin_family = AF_INET;
 	addrSrv.sin_port = htons(m_nPort);
-	int nResult = connect(m_Socket, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR));
-	std::cout << "ConnectServer: " << m_strName << ":" << m_nPort << ". Result:" << nResult << std::endl;
+
+	struct bufferevent *pBufferEvent = bufferevent_socket_new(m_EventBase, m_Socket, BEV_OPT_CLOSE_ON_FREE);
+	assert(pBufferEvent);
+	int nResult = bufferevent_socket_connect(pBufferEvent, (struct sockaddr*)&addrSrv, sizeof(addrSrv));
 	if (nResult == 0)
 	{
-		evutil_make_socket_nonblocking(m_Socket);
-		struct bufferevent *pBufferEvent = bufferevent_socket_new(m_EventBase, m_Socket, BEV_OPT_CLOSE_ON_FREE);
 		bufferevent_setcb(pBufferEvent, OnReadCB, OnWriteCB, OnErrorCB, this);
 		bufferevent_enable(pBufferEvent, EV_READ | EV_WRITE | EV_PERSIST);
 	}
-	else if (m_bAutoConnect)
+	else
 	{
-		event* evListen2 = evtimer_new(m_EventBase, ReConnect, this);
-		timeval tv;
-		tv.tv_sec = 1;
-		tv.tv_usec = 0;
-		int nResult = evtimer_add(evListen2, &tv);
-	}
-	std::cout << "fd:" << m_Socket << ". IP:" << m_strServerIP.c_str() << ". Port:" << m_nPort << std::endl;
-}
+		bufferevent_free(pBufferEvent);
+		if (m_bAutoConnect)
+		{
+			event *evListen2 = event_new(m_EventBase, -1, 0, [](evutil_socket_t, short, void* a_pArg){
+				CSession* pSession = static_cast<CSession*>(a_pArg);
+				if (pSession != nullptr)
+				{
+					pSession->Connect();
+				}
+				else
+				{
+					assert(true);
+				}
+			}, this);
 
-void CSession::CloseSocket()
-{
-	if (m_Socket != 0)
-	{
-		std::cout << "socket close. fd: " << m_Socket << std::endl;
-		closesocket(m_Socket);
-		m_Socket = 0;
+			timeval tv;
+			tv.tv_sec = 1;
+			tv.tv_usec = 0;
+			evtimer_add(evListen2, &tv);
+		}
 	}
+
+	//int nResult = connect(m_Socket, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR));
+	//std::cout << "ConnectServer: " << m_strName << ":" << m_nPort << ". Result:" << nResult << std::endl;
+	//if (nResult == 0)
+	//{
+	//	evutil_make_socket_nonblocking(m_Socket);
+	//	struct bufferevent *pBufferEvent = bufferevent_socket_new(m_EventBase, m_Socket, BEV_OPT_CLOSE_ON_FREE);
+	//}
+	//else if (m_bAutoConnect)
+	//{
+	//	//bufferevent_socket_connect()
+	//	//evconnlistener_new_bind();
+	//}
 }
 
 void CSession::ReConnect(int a_nClientFD, short a_nEvent, void *a_pArg)
@@ -64,7 +94,6 @@ void CSession::ReConnect(int a_nClientFD, short a_nEvent, void *a_pArg)
 	CSession* pSession = static_cast<CSession*>(a_pArg);
 	if (pSession != nullptr)
 	{
-		pSession->CloseSocket();
 		pSession->Connect();
 	}
 	else
@@ -115,24 +144,27 @@ void CSession::OnErrorCB(bufferevent *a_pBen, short a_nEvent, void *a_pArg)
 	{
 		std::cout << "connection closed" << std::endl;
 		CSession* pSession = static_cast<CSession*>(a_pArg);
-		if (pSession != nullptr)
+		if (pSession != nullptr && pSession->GetAutoConnect())
 		{
-			pSession->CloseSocket();
 			pSession->Connect();
 		}
-		else
+		else if(pSession == nullptr)
 		{
 			assert(true);
 		}
+		bufferevent_free(a_pBen);
 	}
 	else if (a_nEvent & BEV_EVENT_ERROR)
 	{
 		std::cout << "Unknown error" << std::endl;
 	}
+	else if (a_nEvent & BEV_EVENT_CONNECTED)
+	{
+		std::cout << "link success" << std::endl;
+	}
 	else
 	{
 		std::cout << "unknown error" << std::endl;
 	}
-	bufferevent_free(a_pBen);
 }
 
