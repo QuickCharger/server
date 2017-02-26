@@ -65,7 +65,10 @@ void CSession::ReConnect(int a_nClientFD, short a_nEvent, void *a_pArg)
 	if (pSession != nullptr)
 	{
 		pSession->CloseSocket();
-		pSession->Connect();
+		if (pSession->GetAutoConnect())
+		{
+			pSession->Connect();
+		}
 	}
 	else
 	{
@@ -118,7 +121,7 @@ void CSession::OnErrorCB(bufferevent *a_pBen, short a_nEvent, void *a_pArg)
 		if (pSession != nullptr)
 		{
 			pSession->CloseSocket();
-			pSession->Connect();
+			ReConnect(0, 0, a_pArg);
 		}
 		else
 		{

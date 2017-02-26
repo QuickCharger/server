@@ -177,7 +177,7 @@ void onErrorCBServer(bufferevent* a_pBen, short a_nEvent, void *a_pArg)
 	}
 	else if (a_nEvent & BEV_EVENT_ERROR)
 	{
-		std::cout << "Unknown error\n" << endl;
+		std::cout << "Unknown error" << endl;
 	}
 	bufferevent_free(a_pBen);
 }
