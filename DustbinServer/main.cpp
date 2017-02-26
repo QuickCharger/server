@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include "base.h"
 #include "commonInclude.h"
+#include "log.h"
 #include "session.h"
 
 using namespace std;
@@ -25,6 +26,11 @@ int main(int argc, char *argv[])
 {
 	InitMinDump();
 	InitNet();
+	InitLog(argv);
+
+	LOG(INFO) << "normal";
+	LOG(WARNING) << "warning";
+	LOG(ERROR) << "error";
 
 	map<std::string, std::string> mDefaultValue;	//cfg文件中的默认值
 	map<std::string, std::pair<std::string, int>> mServer;	//<serverName, <serverIP, Port>>	cfg文件中的要连接的服务器
