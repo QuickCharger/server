@@ -1,0 +1,19 @@
+﻿生成启动时间为 2017/2/27 23:53:21。
+     1>项目“D:\Git\server\third_part\glog-0.3.4\vsprojects\logging_unittest_static\logging_unittest_static.vcxproj”在节点 3 上(Rebuild 个目标)。
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I..\..\src\windows /ZI /nologo /W3 /WX- /Od /Oy- /D GOOGLE_GLOG_DLL_DECL= /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt ..\..\src\logging_unittest.cc
+         logging_unittest.cc
+     1>d:\git\server\third_part\glog-0.3.4\src\windows\port.h(119): warning C4005: “va_copy”: 宏重定义
+                 c:\program files (x86)\microsoft visual studio 12.0\vc\include\stdarg.h(37) : 参见“va_copy”的前一个定义
+     1>d:\git\server\third_part\glog-0.3.4\src\googletest.h(579): warning C4290: 忽略 C++ 异常规范，但指示函数不是 __declspec(nothrow)
+     1>d:\git\server\third_part\glog-0.3.4\src\googletest.h(586): warning C4290: 忽略 C++ 异常规范，但指示函数不是 __declspec(nothrow)
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"D:\Git\server\third_part\glog-0.3.4\Debug\logging_unittest_static.exe" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"D:\Git\server\third_part\glog-0.3.4\Debug\logging_unittest_static.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"D:\Git\server\third_part\glog-0.3.4\Debug\logging_unittest_static.lib" /MACHINE:X86 /SAFESEH Debug\logging_unittest.obj
+         "D:\Git\server\third_part\glog-0.3.4\Debug\libglog_static.lib"
+     1>logging_unittest.obj : warning LNK4075: 忽略“/EDITANDCONTINUE”(由于“/SAFESEH”规范)
+         logging_unittest_static.vcxproj -> D:\Git\server\third_part\glog-0.3.4\Debug\logging_unittest_static.exe
+     1>已完成生成项目“D:\Git\server\third_part\glog-0.3.4\vsprojects\logging_unittest_static\logging_unittest_static.vcxproj”(Rebuild 个目标)的操作。
+
+生成成功。
+
+已用时间 00:00:01.86

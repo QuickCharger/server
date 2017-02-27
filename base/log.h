@@ -7,19 +7,21 @@
 
 void InitLog(char *argv[])
 {
-	//FLAGS_log_dir = "D:/";
+	FLAGS_max_log_size = 300;
+	FLAGS_log_dir = ".\\log";
 	time_t tCurrent = time(nullptr);
 	struct tm *pTime = localtime(&tCurrent); 
 	char chTime[100];
 	strftime(chTime, sizeof(chTime), "%Y_%m_%d %H_%M_%S", pTime);
 	std::string strTime = chTime;
-	std::string LOG_INFO_FILE = FLAGS_log_dir + strTime + ".info.txt";
-	std::string LOG_WARNING_FILE = FLAGS_log_dir + strTime + ".warn.txt";
-	std::string LOG_ERROR_FILE = FLAGS_log_dir + strTime + ".error.txt";
-	std::string LOG_FATAL_FILE = FLAGS_log_dir + strTime + ".fatal.txt";
+	std::string LOG_INFO_FILE = FLAGS_log_dir + strTime + ".info";
+	std::string LOG_WARNING_FILE = FLAGS_log_dir + strTime + ".warn";
+	std::string LOG_ERROR_FILE = FLAGS_log_dir + strTime + ".error";
+	std::string LOG_FATAL_FILE = FLAGS_log_dir + strTime + ".fatal";
+	google::SetLogFilenameExtension(".log");
+	FLAGS_logbufsecs = 0;
 
 	google::InitGoogleLogging(argv[0]);
-	//google::SetLogFilenameExtension(".log");
 	FLAGS_colorlogtostderr = true;
 	google::SetLogDestination(google::INFO, LOG_INFO_FILE.c_str());
 	google::SetLogDestination(google::WARNING, LOG_WARNING_FILE.c_str());

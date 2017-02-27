@@ -1,0 +1,32 @@
+﻿生成启动时间为 2017/2/27 23:53:17。
+     1>项目“D:\Git\server\third_part\glog-0.3.4\vsprojects\libglog_static\libglog_static.vcxproj”在节点 3 上(Rebuild 个目标)。
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I..\..\src\windows /ZI /nologo /W3 /WX- /Od /Oy- /D GOOGLE_GLOG_DLL_DECL= /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt ..\..\src\logging.cc ..\..\src\raw_logging.cc ..\..\src\utilities.cc ..\..\src\vlog_is_on.cc ..\..\src\windows\port.cc
+         port.cc
+     1>d:\git\server\third_part\glog-0.3.4\src\windows\port.h(119): warning C4005: “va_copy”: 宏重定义
+                 c:\program files (x86)\microsoft visual studio 12.0\vc\include\stdarg.h(37) : 参见“va_copy”的前一个定义
+         vlog_is_on.cc
+     1>d:\git\server\third_part\glog-0.3.4\src\windows\port.h(119): warning C4005: “va_copy”: 宏重定义
+                 c:\program files (x86)\microsoft visual studio 12.0\vc\include\stdarg.h(37) : 参见“va_copy”的前一个定义
+         utilities.cc
+     1>d:\git\server\third_part\glog-0.3.4\src\windows\port.h(119): warning C4005: “va_copy”: 宏重定义
+                 c:\program files (x86)\microsoft visual studio 12.0\vc\include\stdarg.h(37) : 参见“va_copy”的前一个定义
+         raw_logging.cc
+     1>d:\git\server\third_part\glog-0.3.4\src\windows\port.h(119): warning C4005: “va_copy”: 宏重定义
+                 c:\program files (x86)\microsoft visual studio 12.0\vc\include\stdarg.h(37) : 参见“va_copy”的前一个定义
+         logging.cc
+     1>d:\git\server\third_part\glog-0.3.4\src\windows\port.h(119): warning C4005: “va_copy”: 宏重定义
+                 c:\program files (x86)\microsoft visual studio 12.0\vc\include\stdarg.h(37) : 参见“va_copy”的前一个定义
+         正在生成代码...
+       Lib:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\Lib.exe /OUT:"D:\Git\server\third_part\glog-0.3.4\Debug\libglog_static.lib" /NOLOGO Debug\logging.obj
+         Debug\raw_logging.obj
+         Debug\utilities.obj
+         Debug\vlog_is_on.obj
+         Debug\port.obj
+         libglog_static.vcxproj -> D:\Git\server\third_part\glog-0.3.4\Debug\libglog_static.lib
+     1>已完成生成项目“D:\Git\server\third_part\glog-0.3.4\vsprojects\libglog_static\libglog_static.vcxproj”(Rebuild 个目标)的操作。
+
+生成成功。
+
+已用时间 00:00:04.36
