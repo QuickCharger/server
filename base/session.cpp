@@ -2,6 +2,8 @@
 #include <assert.h>
 #include <iostream>
 #include <time.h>
+#include "buffer.h"
+//#include "log.h"
 
 CSession::CSession(event_base* a_pEventBase)
 	: m_EventBase(a_pEventBase)
@@ -10,8 +12,12 @@ CSession::CSession(event_base* a_pEventBase)
 	, m_strServerIP("")
 	, m_nPort(0)
 	, m_bAutoConnect(false)
+	, m_pBuffer(nullptr)
+	, m_pReadBuffer(nullptr)
 {
-
+	m_pBuffer = new CBuffer(4000);	//4KB per buffer
+	m_pReadBuffer = new char[m_nReadBufferSize];
+	memset(m_pReadBuffer, 0, m_nReadBufferSize);
 }
 
 CSession::~CSession()
@@ -35,7 +41,22 @@ void CSession::Connect()
 	{
 		evutil_make_socket_nonblocking(m_Socket);
 		struct bufferevent *pBufferEvent = bufferevent_socket_new(m_EventBase, m_Socket, BEV_OPT_CLOSE_ON_FREE);
-		bufferevent_setcb(pBufferEvent, OnReadCB, OnWriteCB, OnErrorCB, this);
+		//bufferevent_setcb(pBufferEvent, OnReadCB, OnWriteCB, OnErrorCB, this);
+		bufferevent_setcb(
+			pBufferEvent,
+			[](bufferevent *a_pBev, void *a_pArg){
+			CSession* pSession = static_cast<CSession*>(a_pArg);
+			pSession->OnReadCB(a_pBev, a_pArg);
+		},
+			[](bufferevent *a_pBev, void *a_pArg){
+			CSession* pSession = static_cast<CSession*>(a_pArg);
+			pSession->OnWriteCB(a_pBev, a_pArg);
+		},
+			[](bufferevent *a_pBen, short a_nEvent, void *a_pArg){
+			CSession* pSession = static_cast<CSession*>(a_pArg);
+			pSession->OnErrorCB(a_pBen, a_nEvent, a_pArg);
+		},
+			this);
 		bufferevent_enable(pBufferEvent, EV_READ | EV_WRITE | EV_PERSIST);
 	}
 	else if (m_bAutoConnect)
@@ -78,26 +99,14 @@ void CSession::ReConnect(int a_nClientFD, short a_nEvent, void *a_pArg)
 
 void CSession::OnReadCB(bufferevent *a_pBev, void *a_pArg)
 {
-	std::cout << "OnReadCB" << std::endl;
-#define MAX_LINE 10240
-	char line[MAX_LINE];
-	memset(line, 0, MAX_LINE);
-	static int nRecv = 0;
-	static time_t tBegin = 0;
-	static time_t tEnd = 0;
-	int n;
-	evutil_socket_t fd = bufferevent_getfd(a_pBev);
-	while (n = bufferevent_read(a_pBev, line, MAX_LINE), n > 0)
+	//DLOG(INFO) << "OnReadCB";
+	int nReadSize;
+	while (nReadSize = bufferevent_read(a_pBev, m_pReadBuffer, m_nReadBufferSize), nReadSize > 0)
 	{
-		if (tBegin == 0)
-			tBegin = time(nullptr);
-		tEnd = time(nullptr);
-		nRecv += n;
-		//line[n] = '\0';
-		bufferevent_write(a_pBev, line, n);
-		std::cout << line << std::endl;
+		CSession* pSession = static_cast<CSession*>(a_pArg);
+		m_pBuffer->Append(m_pReadBuffer, nReadSize);
+		memset(m_pReadBuffer, 0, m_nReadBufferSize);
 	}
-#undef MAX_LINE
 }
 
 void CSession::OnWriteCB(bufferevent *a_pBev, void *a_pArg)
