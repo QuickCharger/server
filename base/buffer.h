@@ -4,9 +4,10 @@
 class CBuffer
 {
 	enum{
-		eOverPackage = -1,
-		eOK = 0,
-		eCanRead = 1,
+		eReadBufferStateBufHeadErr = -2,
+		eReadBufferStateOverPackage = -1,
+		eReadBufferStateOK = 0,
+		eReadBufferStateCanRead = 1,
 	};
 public:
 	CBuffer(int a_nBufferSize);
@@ -14,7 +15,7 @@ public:
 	int Append(const char* a_pData, int a_uSize);
 
 private:
-	bool checkParse();
+	int checkParse();
 
 	int m_nBufSize;
 	int m_nCurrentSize;

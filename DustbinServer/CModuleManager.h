@@ -1,5 +1,5 @@
-#ifndef _CLIENTSERVER_CMODULEMANAGE_H_
-#define _CLIENTSERVER_CMODULEMANAGE_H_
+#ifndef _CMODULEMANAGE_H_
+#define _CMODULEMANAGE_H_
 
 class CModuleManager
 {

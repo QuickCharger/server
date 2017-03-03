@@ -6,14 +6,6 @@
 //#include "log.h"
 
 CSession::CSession(event_base* a_pEventBase)
-	: m_EventBase(a_pEventBase)
-	, m_Socket(0)
-	, m_strName("")
-	, m_strServerIP("")
-	, m_nPort(0)
-	, m_bAutoConnect(false)
-	, m_pBuffer(nullptr)
-	, m_pReadBuffer(nullptr)
 {
 	m_pBuffer = new CBuffer(4000);	//4KB per buffer
 	m_pReadBuffer = new char[m_nReadBufferSize];
@@ -22,7 +14,7 @@ CSession::CSession(event_base* a_pEventBase)
 
 CSession::~CSession()
 {
-	m_EventBase = nullptr;
+	m_pEventBase = nullptr;
 }
 
 void CSession::Connect()
@@ -36,11 +28,11 @@ void CSession::Connect()
 	addrSrv.sin_family = AF_INET;
 	addrSrv.sin_port = htons(m_nPort);
 	int nResult = connect(m_Socket, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR));
-	std::cout << "ConnectServer: " << m_strName << ":" << m_nPort << ". Result:" << nResult << std::endl;
+	std::cout << "ConnectServer: " << m_strServerName << ":" << m_nPort << ". Result:" << nResult << std::endl;
 	if (nResult == 0)
 	{
 		evutil_make_socket_nonblocking(m_Socket);
-		struct bufferevent *pBufferEvent = bufferevent_socket_new(m_EventBase, m_Socket, BEV_OPT_CLOSE_ON_FREE);
+		struct bufferevent *pBufferEvent = bufferevent_socket_new(m_pEventBase, m_Socket, BEV_OPT_CLOSE_ON_FREE);
 		//bufferevent_setcb(pBufferEvent, OnReadCB, OnWriteCB, OnErrorCB, this);
 		bufferevent_setcb(
 			pBufferEvent,
@@ -61,7 +53,7 @@ void CSession::Connect()
 	}
 	else if (m_bAutoConnect)
 	{
-		event* evListen2 = evtimer_new(m_EventBase, ReConnect, this);
+		event* evListen2 = evtimer_new(m_pEventBase, ReConnect, this);
 		timeval tv;
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;

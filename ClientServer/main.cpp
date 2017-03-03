@@ -1,314 +1,103 @@
-//#include <stdio.h>
-//#include "base.h"
-//#include "event2/event.h"  // libevent core
-//#include "minidump.h"
-//
-//int main(int argc, char* argv[])
-//{
-//	InitMinDump();
-//	InitLog(argv);
-//	InitNet();
-//
-//
-//
-//	CloseLog();
-//	CloseNet();
-//
-//	return 0;
-//}
-
-
-////定时器示例
-//#include <iostream>
-//#include <event.h>
-//#include <ctime>
-//
-//void callback(evutil_socket_t fd, short what, void *arg)
-//{
-//	printf("event ocurrence every 2 seconds.\n");
-//	timeval *pTime = (timeval*)&arg;
-//	printf("sec: %d. mil:%d\n", pTime->tv_sec, pTime->tv_usec);
-//	printf("%s\n", (char*)arg + sizeof(timeval));
-//	printf("\n");
-//}
-//
-//int main()
-//{
-//	WSADATA wsa_data;
-//	WSAStartup(MAKEWORD(2, 2), &wsa_data);
-//
-//	timeval two_sec = { 2, 0 };
-//	event_base *base = event_base_new();
-//
-//	char *pCh = "this is a test message";
-//	char* pVoid = new char[sizeof(timeval) + strlen(pCh) + 1];
-//	memset(pVoid, 0, sizeof(timeval) + strlen(pCh) + 1);
-//	memcpy(pVoid, (void*)&two_sec, sizeof(timeval));
-//	memcpy(pVoid + sizeof(timeval), pCh, strlen(pCh) + 1);
-//
-//	//EV_PERSIST | EV_TIMEOUT 定时重复
-//	//event_new()出来的event生命期Libevent处理
-//	event *timeout = event_new(base, -1, EV_PERSIST | EV_TIMEOUT, callback, pVoid);
-//	event_add(timeout, &two_sec);
-//	event_base_dispatch(base);
-//
-//	WSACleanup();
-//	event_base_free(base);
-//
-//	getchar();
-//	return 0;
-//}
-
-//
-////第二个定时器示例，使用多个定时器
-//#include <ctime>
-//#include <iostream>
-//#include <event.h>
-//#include <event_struct.h>
-//
-//#define TIMECOUNT 10
-//#define BUFLEN 100
-//
-//void callback(evutil_socket_t fd, short what, void *arg)
-//{
-//	printf("%s\n", (char*)arg);
-//}
-//
-//int main(int argc, char **argv)
-//{
-//	event_base *pBase = event_base_new();
-//	event evTimeout[TIMECOUNT];
-//	timeval tTime;
-//	evutil_timerclear(&tTime);
-//	for (int i = 0; i < TIMECOUNT; ++i)
-//	{
-//		char bufTmp[BUFLEN] = { 0 };
-//		char *buf = new char[BUFLEN];
-//		memset(buf, 0, BUFLEN);
-//		sprintf(bufTmp, "taskID %d", i + 1);
-//		memcpy(buf, bufTmp, BUFLEN);
-//		//event_assign()对应的event生命期用户处理
-//		event_assign(evTimeout + i, pBase, -1, 0, callback, (void*)buf);
-//		tTime.tv_sec = i;
-//		event_add(evTimeout + i, &tTime);
-//	}
-//	event_base_dispatch(pBase);
-//
-//	printf("dispatch OVER\n");
-//	event_base_free(pBase);
-//
-//	getchar();
-//	return 0;
-//}
-
-
-
-////第三个定时器示例，简化使用方法，函数展开后近似于第二种写法，event_base使用模式方式
-//#include <iostream>
-//#include "event.h"
-//#include "event2/event_compat.h"
-//#include "event2/event_struct.h"
-//
-//using namespace std;
-//
-//void CallBack(int sock, short event, void* arg)
-//{
-//	cout << "OVER" << endl;
-//	struct timeval tv;
-//	tv.tv_sec = 1;
-//	tv.tv_usec = 0;
-//	//重新添加定时器时间，原本定时器触发后默认自动删除
-//	event_add((struct event*)arg, &tv);
-//}
-//
-//int main()
-//{
-//	event_init();
-//	struct event evTime;
-//	evtimer_set(&evTime, CallBack, &evTime);
-//
-//	struct timeval tv;
-//	tv.tv_sec = 1;
-//	tv.tv_usec = 0;
-//	event_add(&evTime, &tv);
-//	event_dispatch();
-//
-//	return 0;
-//}
-
-
-
-
-
-
-
-////网络示例
-//#include <assert.h>
-//#include <ctime>
-//#include <iostream>
-//#include <fcntl.h>
-//#include <event.h>
-//#include <event_struct.h>
-//#include "event2/event_compat.h"
-//
-//#pragma comment(lib, "ws2_32.lib")
-//
-//using namespace std;
-//
-//unsigned int sockSrv;
-//struct event_base *g_pEventBase;
-//
-//void onRead(int a_nClientFD, short a_nEvent, void* a_pArg)
-//{
-//	int nLen;
-//	char buf[1500];
-//	nLen = recv(a_nClientFD, buf, 1500, 0);
-//	if (nLen <= 0)
-//	{
-//		cout << "Client Close" << endl;
-//		event* pEvRead = (event*)a_pArg;
-//		event_del(pEvRead);
-//		delete pEvRead;
-//		closesocket(a_nClientFD);
-//		return;
-//	}
-//
-//	buf[nLen] = 0;
-//	cout << "Client Info: " << buf << endl;
-//}
-//
-//void onAccept(int a_nClientFD, short a_nEvent, void *a_pArg)
-//{
-//	SOCKADDR_IN ClientAddr;
-//	int len = sizeof(SOCKADDR);
-//	SOCKET sockConn = accept(a_nClientFD, (SOCKADDR*)&ClientAddr, &len);
-//	cout << "New Connect" << endl;
-//
-//	//连接注册为新事件(EV_PERSIST)为事件触发后不默认删除
-//	event *pEvRead = new event;
-//	event_set(pEvRead, sockConn, EV_READ | EV_PERSIST, onRead, pEvRead);
-//	event_base_set(g_pEventBase, pEvRead);
-//	event_add(pEvRead, nullptr);
-//}
-//
-//int main()
-//{
-//	WSADATA wsa_data;
-//	WSAStartup(MAKEWORD(2, 2), &wsa_data);
-//
-//	sockSrv = socket(AF_INET, SOCK_STREAM, 0);
-//
-//	SOCKADDR_IN addrSrv;
-//	memset(&addrSrv, 0, sizeof(SOCKADDR_IN));
-//	addrSrv.sin_family = AF_INET;
-//	addrSrv.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
-//	addrSrv.sin_port = htons(8888);
-//
-//	if (bind(sockSrv, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR)) == -1)
-//		assert(0);
-//
-//	if (listen(sockSrv, 10) == -1)
-//		assert(0);
-//	
-//	g_pEventBase = event_base_new();
-//
-//	//EV_TIMEOUT	超时
-//	//EV_READ		只要网络缓冲中还有数据，回调就会被触发
-//	//EV_WRITE		只要塞给网络缓冲的数据被写完，回调就会被触发
-//	//EV_SIGNAL		POSIX SIGNAL
-//	//EV_PRESIST	如果不加，回调触发后会被删除
-//	//EV_ET			边缘触发，参考EPOLL_ET
-//	event *evListen = event_new(g_pEventBase, sockSrv, EV_READ | EV_PERSIST, onAccept, nullptr);
-//	//上面一行和下面三行相同结果，不同方式在于上面的方法最后一个参数不能写event_new的返回值，下面的方法可以达到目的。
-//	//struct event evListen;
-//	//event_set(&evListen, sockSrv, EV_READ | EV_PERSIST, onAccept, nullptr);
-//	//event_base_set(g_pEventBase, &evListen);
-//
-//	if (event_add(evListen, nullptr) == -1)
-//		assert(0);
-//
-//	event_base_dispatch(g_pEventBase);
-//
-//	return 0;
-//}
-
-
-
-
-//网络示例2
 #include <assert.h>
 #include <ctime>
 #include <iostream>
 #include <fcntl.h>
+#include "base.h"
 #include "commonInclude.h"
-#include "CClientManager.h"
+#include "log.h"
+#include "session.h"
 
 using namespace std;
 
-#define PORT 8880
+#define MAXLINK 5
 
-std::vector<pair<int, void*>> g_vPORT;
+event_base *g_pEventBase;
 
-unsigned int sockSrv;
-struct event_base *g_pEventBase;
-CClientManager *g_pClientManager;
-
+void LinkToServer(int a_nClientFD, short a_nEvent, void *a_pArg);
 void onAccept(int a_nClientFD, short a_nEvent, void *a_pArg);
 void onReadCB(bufferevent *a_pBev, void *a_pArg);
 void onWriteCB(bufferevent *a_pBen, void *a_pArg);
 void onErrorCB(bufferevent *a_pBen, short a_nEvent, void *a_pArg);
+void onErrorCBServer(bufferevent* a_pBen, short a_nEvent, void *a_pArg);
+void ConnectServer(std::pair<std::string, int>& serverConfig, SOCKET& socket);
 
 int main(int argc, char *argv[])
 {
 	InitMinDump();
 	InitNet();
+	InitLog(argv);
 
-	//for (int i = 0; i < MAXLINK; ++i)
-	//{
-	//	g_vPORT.push_back(make_pair(i, nullptr));
-	//}
+	map<std::string, std::string> mDefaultValue;	//cfg文件中的默认值
+	map<std::string, std::pair<std::string, int>> mServer;	//<serverName, <serverIP, Port>>	cfg文件中的要连接的服务器
+	if (InitConfig(argv[0], mDefaultValue, mServer) != 0)
+	{
+		std::cout << GetLastErr();
+		exit(1);
+	}
 
-	g_pClientManager = new CClientManager;
+	int nPort = 8880;
+	if (mDefaultValue.find("port") != mDefaultValue.end())
+	{
+		nPort = atoi(mDefaultValue.find("port")->second.c_str());
+	}
 
-	sockSrv = socket(AF_INET, SOCK_STREAM, 0);
-	evutil_make_listen_socket_reuseable(sockSrv);
+	evutil_socket_t sockSrv = socket(AF_INET, SOCK_STREAM, 0);
+	evutil_make_socket_nonblocking(sockSrv);
+#ifndef WIN32
+	evutil_make_listen_socket_reuseable(sockSrv);	//设定接口可重用,Win上不可用
+#endif
 
 	SOCKADDR_IN addrSrv;
-	memset(&addrSrv, 0, sizeof(SOCKADDR_IN));
+	std::memset(&addrSrv, 0, sizeof(SOCKADDR_IN));
 	addrSrv.sin_family = AF_INET;
 	addrSrv.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
-	addrSrv.sin_port = htons(PORT);
+	addrSrv.sin_port = htons(nPort);
 
 	if (bind(sockSrv, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR)) == -1)
 	{
-		cout << "bind error";
-		getchar();
+		perror("bind error");
 		return -1;
 	}
 
 	if (listen(sockSrv, 10) == -1)
 	{
-		cout << "listen error";
-		getchar();
+		perror("listen error");
 		return -1;
 	}
 
-	evutil_make_socket_nonblocking(sockSrv);
-
-	event_base *pEventBase = event_base_new();
-
-	event *evListen = event_new(pEventBase, sockSrv, EV_READ | EV_PERSIST, onAccept, (void*)pEventBase);
+	g_pEventBase = event_base_new();
+	event *evListen = event_new(g_pEventBase, sockSrv, EV_READ | EV_PERSIST, onAccept, (void*)g_pEventBase);
+	event *evListen2 = event_new(g_pEventBase, -1, 0, LinkToServer, static_cast<void*>(&mServer));
 
 	event_add(evListen, nullptr);
 
-	event_base_dispatch(pEventBase);
+	timeval tv;
+	tv.tv_sec = 1;
+	tv.tv_usec = 0;
+	event_add(evListen2, &tv);
 
-	cout << "PROGRAM FINISH" << endl << "press any key to exit" << endl;
+	event_base_dispatch(g_pEventBase);
+
+	std::cout << "PROGRAM FINISH" << endl << "press any key to exit" << endl;
 	getchar();
 
 	CloseNet();
 
 	return 0;
+}
+
+void LinkToServer(int a_nClientFD, short a_nEvent, void *a_pArg)
+{
+	map<std::string, std::pair<std::string, int>> *serverCfg = static_cast<map<std::string, std::pair<std::string, int>>*>(a_pArg);
+	for (auto it = serverCfg->begin(); it != serverCfg->end(); ++it)
+	{
+		CSession *pConnect = new CSession(g_pEventBase);
+		pConnect->SetServerName(it->first);
+		pConnect->SetServerIP(it->second.first);
+		pConnect->SetPort(it->second.second);
+		pConnect->SetAutoConnect(true);
+		pConnect->Connect();
+	}
 }
 
 void onAccept(int a_nClientFD, short a_nEvent, void *a_pArg)
@@ -318,44 +107,44 @@ void onAccept(int a_nClientFD, short a_nEvent, void *a_pArg)
 	SOCKET sockConn = accept(a_nClientFD, (SOCKADDR*)&ClientAddr, &len);
 	if (sockConn > 0)
 	{
-		cout << "New Connect Accept Success" << endl;
+		std::cout << "New Connect Accept Success. socketID: " << sockConn << endl;
 	}
 	else
 	{
-		cout << "New Connect Accept Failed!!!" << endl;
-		perror("");
+		std::cout << "New Connect Accept Failed!!!" << endl;
 		return;
 	}
 
-	if (g_pClientManager->AddPlayer(sockConn))
-	{
-		struct bufferevent *pBufferEvent = bufferevent_socket_new((event_base*)a_pArg, sockConn, BEV_OPT_CLOSE_ON_FREE);;
-		bufferevent_setcb(pBufferEvent, onReadCB, onWriteCB, onErrorCB, a_pArg);
-		bufferevent_enable(pBufferEvent, EV_READ | EV_WRITE | EV_PERSIST);
-	}
-	else
-	{
-		//close socket, unfinish
-	}
+	struct bufferevent *pBufferEvent = bufferevent_socket_new((event_base*)a_pArg, sockConn, BEV_OPT_CLOSE_ON_FREE);
+	bufferevent_setcb(pBufferEvent, onReadCB, onWriteCB, onErrorCB, a_pArg);
+	bufferevent_enable(pBufferEvent, EV_READ | EV_WRITE | EV_PERSIST);
 }
 
 void onReadCB(bufferevent *a_pBev, void *a_pArg)
 {
-#define MAX_LINE 256
+#define MAX_LINE 10240
 	char line[MAX_LINE];
+	static int nRecv = 0;
+	static time_t tBegin = 0;
+	static time_t tEnd = 0;
 	int n;
 	evutil_socket_t fd = bufferevent_getfd(a_pBev);
 	while (n = bufferevent_read(a_pBev, line, MAX_LINE), n > 0)
 	{
+		if (tBegin == 0)
+			tBegin = time(nullptr);
+		tEnd = time(nullptr);
+		nRecv += n;
 		line[n] = '\0';
-		printf("fd=%u, read line: %s\n", fd, line);
+		//printf("fd=%u, read line: %s\n", fd, line);
+		//printf("Recv: %d\n", nRecv);
 		bufferevent_write(a_pBev, line, n);
 	}
 }
 
 void onWriteCB(bufferevent *a_pBen, void *a_pArg)
 {
-	printf("write over\n");
+	//TODO
 }
 
 void onErrorCB(bufferevent *a_pBen, short a_nEvent, void *a_pArg)
@@ -364,15 +153,46 @@ void onErrorCB(bufferevent *a_pBen, short a_nEvent, void *a_pArg)
 	printf("fd=%u ", fd);
 	if (a_nEvent & BEV_EVENT_TIMEOUT)
 	{
-		printf("Time out\n");
+		std::cout << "socket Time out" << endl;
 	}
 	else if (a_nEvent & BEV_EVENT_EOF)
 	{
-		printf("connection closed\n");
+		std::cout << "connection closed" << endl;
 	}
 	else if (a_nEvent & BEV_EVENT_ERROR)
 	{
-		printf("Unknown error\n");
+		std::cout << "Unknown error\n" << endl;
 	}
 	bufferevent_free(a_pBen);
+}
+
+void onErrorCBServer(bufferevent* a_pBen, short a_nEvent, void *a_pArg)
+{
+	evutil_socket_t fd = bufferevent_getfd(a_pBen);
+	printf("fd=%u ", fd);
+	if (a_nEvent & BEV_EVENT_TIMEOUT)
+	{
+		std::cout << "socket Time out" << endl;
+	}
+	else if (a_nEvent & BEV_EVENT_EOF)
+	{
+		std::cout << "connection closed" << endl;
+	}
+	else if (a_nEvent & BEV_EVENT_ERROR)
+	{
+		std::cout << "Unknown error" << endl;
+	}
+	bufferevent_free(a_pBen);
+}
+
+void ConnectServer(std::pair<std::string, int>& serverConfig, SOCKET& a_Socket)
+{
+	a_Socket = socket(AF_INET, SOCK_STREAM, 0);
+	evutil_make_socket_nonblocking(a_Socket);
+	SOCKADDR_IN addrSrv;
+	addrSrv.sin_addr.S_un.S_addr = inet_addr(serverConfig.first.c_str());
+	addrSrv.sin_family = AF_INET;
+	addrSrv.sin_port = htons(serverConfig.second);
+	int nResult = connect(a_Socket, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR));
+	cout << "ConnectServer: " << serverConfig.first << ":" << serverConfig.second << ". Result:" << nResult << endl;
 }

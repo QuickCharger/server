@@ -6,13 +6,15 @@
 #include "commonInclude.h"
 #include "log.h"
 #include "session.h"
+#include "macro.h"
+#include "CClientManager.h"
 
 using namespace std;
 
-#define PORT 8880
 #define MAXLINK 5
 
 event_base *g_pEventBase;
+CClientManager *g_pClientManager;
 
 void LinkToServer(int a_nClientFD, short a_nEvent, void *a_pArg);
 void onAccept(int a_nClientFD, short a_nEvent, void *a_pArg);
@@ -28,10 +30,6 @@ int main(int argc, char *argv[])
 	InitNet();
 	InitLog(argv);
 
-	LOG(INFO) << "normal";
-	LOG(WARNING) << "warning";
-	LOG(ERROR) << "error";
-
 	map<std::string, std::string> mDefaultValue;	//cfg文件中的默认值
 	map<std::string, std::pair<std::string, int>> mServer;	//<serverName, <serverIP, Port>>	cfg文件中的要连接的服务器
 	if (InitConfig(argv[0], mDefaultValue, mServer) != 0)
@@ -39,6 +37,14 @@ int main(int argc, char *argv[])
 		std::cout << GetLastErr();
 		exit(1);
 	}
+
+	int nPort = 8881;
+	if (mDefaultValue.find("port") != mDefaultValue.end())
+	{
+		nPort = atoi(mDefaultValue.find("port")->second.c_str());
+	}
+
+	g_pClientManager = new CClientManager();
 
 	evutil_socket_t sockSrv = socket(AF_INET, SOCK_STREAM, 0);
 	evutil_make_socket_nonblocking(sockSrv);
@@ -50,7 +56,7 @@ int main(int argc, char *argv[])
 	std::memset(&addrSrv, 0, sizeof(SOCKADDR_IN));
 	addrSrv.sin_family = AF_INET;
 	addrSrv.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
-	addrSrv.sin_port = htons(PORT);
+	addrSrv.sin_port = htons(nPort);
 
 	if (bind(sockSrv, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR)) == -1)
 	{
@@ -64,9 +70,6 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-
-	//evtimer_new();
-	//evtimer_add();
 	g_pEventBase = event_base_new();
 	event *evListen = event_new(g_pEventBase, sockSrv, EV_READ | EV_PERSIST, onAccept, (void*)g_pEventBase);
 	event *evListen2 = event_new(g_pEventBase, -1, 0, LinkToServer, static_cast<void*>(&mServer));
@@ -109,14 +112,17 @@ void onAccept(int a_nClientFD, short a_nEvent, void *a_pArg)
 	SOCKET sockConn = accept(a_nClientFD, (SOCKADDR*)&ClientAddr, &len);
 	if (sockConn > 0)
 	{
-		std::cout << "New Connect Accept Success. socketID: " << sockConn << endl;
+		LOG(INFO) << "New Connect Accept Success. socketID: " << sockConn << endl;
 	}
 	else
 	{
-		std::cout << "New Connect Accept Failed!!!" << endl;
+		LOG(WARNING) << "New Connect Accept Failed!!!" << endl;
 		return;
 	}
-
+	CSession *pNewSession = new CSession(g_pEventBase);
+	pNewSession->SetSocket(sockConn);
+	g_pClientManager->AddPlayer(0, pNewSession);
+	//g_pClientManager->InitPlayerSession();
 	struct bufferevent *pBufferEvent = bufferevent_socket_new((event_base*)a_pArg, sockConn, BEV_OPT_CLOSE_ON_FREE);
 	bufferevent_setcb(pBufferEvent, onReadCB, onWriteCB, onErrorCB, a_pArg);
 	bufferevent_enable(pBufferEvent, EV_READ | EV_WRITE | EV_PERSIST);
@@ -146,8 +152,7 @@ void onReadCB(bufferevent *a_pBev, void *a_pArg)
 
 void onWriteCB(bufferevent *a_pBen, void *a_pArg)
 {
-	//printf("fd: %d. write over\n", bufferevent_getfd(a_pBen));
-	//bufferevent_write(a_pBen, "qwer", 4);
+	//TODO
 }
 
 void onErrorCB(bufferevent *a_pBen, short a_nEvent, void *a_pArg)
