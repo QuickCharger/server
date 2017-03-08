@@ -3,13 +3,13 @@
 #include <iostream>
 #include <time.h>
 #include "buffer.h"
-//#include "log.h"
+#include "log.h"
 
 CSession::CSession(event_base* a_pEventBase)
 {
-	m_pBuffer = new CBuffer(4000);	//4KB per buffer
-	m_pReadBuffer = new char[m_nReadBufferSize];
-	memset(m_pReadBuffer, 0, m_nReadBufferSize);
+	m_pEventBase = a_pEventBase;
+	m_pReadBuffer = new CBuffer(4000);	//4KB per buffer
+	m_pSendBuffer = new CBuffer(4000);	
 }
 
 CSession::~CSession()
@@ -28,14 +28,14 @@ void CSession::Connect()
 	addrSrv.sin_family = AF_INET;
 	addrSrv.sin_port = htons(m_nPort);
 	int nResult = connect(m_Socket, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR));
-	std::cout << "ConnectServer: " << m_strServerName << ":" << m_nPort << ". Result:" << nResult << std::endl;
+	LOG(INFO) << "ConnectServer: " << m_strServerName << ":" << m_nPort << ". Result:" << nResult;
 	if (nResult == 0)
 	{
 		evutil_make_socket_nonblocking(m_Socket);
-		struct bufferevent *pBufferEvent = bufferevent_socket_new(m_pEventBase, m_Socket, BEV_OPT_CLOSE_ON_FREE);
+		m_pBufferEvent = bufferevent_socket_new(m_pEventBase, m_Socket, BEV_OPT_CLOSE_ON_FREE);
 		//bufferevent_setcb(pBufferEvent, OnReadCB, OnWriteCB, OnErrorCB, this);
 		bufferevent_setcb(
-			pBufferEvent,
+			m_pBufferEvent,
 			[](bufferevent *a_pBev, void *a_pArg){
 			CSession* pSession = static_cast<CSession*>(a_pArg);
 			pSession->OnReadCB(a_pBev, a_pArg);
@@ -46,97 +46,129 @@ void CSession::Connect()
 		},
 			[](bufferevent *a_pBen, short a_nEvent, void *a_pArg){
 			CSession* pSession = static_cast<CSession*>(a_pArg);
-			pSession->OnErrorCB(a_pBen, a_nEvent, a_pArg);
+			pSession->OnErrorCB(a_nEvent);
 		},
 			this);
-		bufferevent_enable(pBufferEvent, EV_READ | EV_WRITE | EV_PERSIST);
+		bufferevent_enable(m_pBufferEvent, EV_READ | EV_WRITE | EV_PERSIST);
 	}
 	else if (m_bAutoConnect)
 	{
-		event* evListen2 = evtimer_new(m_pEventBase, ReConnect, this);
+		LOG(WARNING) << "new Timer";
+		event* evListen2 = evtimer_new(m_pEventBase, 
+			[](int, short, void *a_pArg){
+			CSession* pSession = static_cast<CSession*>(a_pArg);
+			pSession->ReConnect();
+		},
+			this);
+
 		timeval tv;
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
 		int nResult = evtimer_add(evListen2, &tv);
 	}
-	std::cout << "fd:" << m_Socket << ". IP:" << m_strServerIP.c_str() << ". Port:" << m_nPort << std::endl;
+	LOG(INFO) << "fd:" << m_Socket << ". IP:" << m_strServerIP.c_str() << ". Port:" << m_nPort;
 }
 
 void CSession::CloseSocket()
 {
 	if (m_Socket != 0)
 	{
-		std::cout << "socket close. fd: " << m_Socket << std::endl;
+		LOG(INFO) << "socket close. fd: " << m_Socket;
 		closesocket(m_Socket);
 		m_Socket = 0;
 	}
 }
 
-void CSession::ReConnect(int a_nClientFD, short a_nEvent, void *a_pArg)
+void CSession::ReConnect()
 {
-	CSession* pSession = static_cast<CSession*>(a_pArg);
-	if (pSession != nullptr)
+	CloseSocket();
+	if (m_bAutoConnect)
 	{
-		pSession->CloseSocket();
-		if (pSession->GetAutoConnect())
-		{
-			pSession->Connect();
-		}
-	}
-	else
-	{
-		assert(true);
+		Connect();
 	}
 }
 
 void CSession::OnReadCB(bufferevent *a_pBev, void *a_pArg)
 {
-	//DLOG(INFO) << "OnReadCB";
+#define MAXREADBUFFER 1024
+	char *pBuf = new char[MAXREADBUFFER];
 	int nReadSize;
-	while (nReadSize = bufferevent_read(a_pBev, m_pReadBuffer, m_nReadBufferSize), nReadSize > 0)
+	while (nReadSize = bufferevent_read(a_pBev, pBuf, MAXREADBUFFER), nReadSize > 0)
 	{
+		memset(pBuf, 0, MAXREADBUFFER);
 		CSession* pSession = static_cast<CSession*>(a_pArg);
-		m_pBuffer->Append(m_pReadBuffer, nReadSize);
-		memset(m_pReadBuffer, 0, m_nReadBufferSize);
+		m_pReadBuffer->Append(pBuf, nReadSize);
 	}
+	int nState = m_pReadBuffer->CheckParse();
+	if (nState == CBuffer::eReadBufferStateCanRead)
+	{
+		m_funcReadCB((void*)m_pReadBuffer->GetBuffer());
+	}
+	else if (nState != CBuffer::eReadBufferStateOK)
+	{
+		// TODO
+	}
+	delete[]pBuf;
+#undef MAXREADBUFFER
 }
 
 void CSession::OnWriteCB(bufferevent *a_pBev, void *a_pArg)
 {
-	std::cout << "OnWriteCB" << std::endl;
-}
-
-void CSession::OnErrorCB(bufferevent *a_pBen, short a_nEvent, void *a_pArg)
-{
-	std::cout << "OnErrorCB" << std::endl;
-	evutil_socket_t fd = bufferevent_getfd(a_pBen);
-	printf("fd=%u ", fd);
-	if (a_nEvent & BEV_EVENT_TIMEOUT)
+	LOG(INFO) << "OnWriteCB";
+	if (m_pSendBuffer->GetCurrentSize() != 0)
 	{
-		std::cout << "socket Time out" << std::endl;
-	}
-	else if (a_nEvent & BEV_EVENT_EOF)
-	{
-		std::cout << "connection closed" << std::endl;
-		CSession* pSession = static_cast<CSession*>(a_pArg);
-		if (pSession != nullptr)
+		if (bufferevent_write(a_pBev, m_pSendBuffer->GetBuffer(), m_pSendBuffer->GetCurrentSize()) == 0)
 		{
-			pSession->CloseSocket();
-			ReConnect(0, 0, a_pArg);
+			m_funcWriteCB((void*)m_pSendBuffer->GetBuffer());
+			m_pSendBuffer->ClearBuffer();
 		}
 		else
 		{
-			assert(true);
+			m_funcWriteCB((void*)(1));
 		}
+	}
+}
+
+void CSession::OnErrorCB(short a_nEvent)
+{
+	LOG(INFO) << "OnErrorCB";
+	bufferevent_free(m_pBufferEvent);
+	m_pBufferEvent = nullptr;
+	if (a_nEvent & BEV_EVENT_TIMEOUT)
+	{
+		LOG(WARNING) << "socket Time out";
+	}
+	else if (a_nEvent & BEV_EVENT_EOF)
+	{
+		LOG(WARNING) << "connection closed";
+		ReConnect();
 	}
 	else if (a_nEvent & BEV_EVENT_ERROR)
 	{
-		std::cout << "Unknown error" << std::endl;
+		LOG(WARNING) << "Unknown error";
 	}
 	else
 	{
-		std::cout << "unknown error" << std::endl;
+		LOG(WARNING) << "unknown error";
 	}
-	bufferevent_free(a_pBen);
 }
 
+void CSession::Send(char* a_pBuffer, int a_nSize)
+{
+	m_pSendBuffer->Append(a_pBuffer, a_nSize);
+	if (bufferevent_write(m_pBufferEvent, m_pSendBuffer->GetBuffer(), m_pSendBuffer->GetCurrentSize()) == 0)
+	{
+		m_funcWriteCB((void*)m_pSendBuffer->GetBuffer());
+		m_pSendBuffer->ClearBuffer();
+	}
+	else
+	{
+		m_funcWriteCB((void*)(1));
+	}
+}
+
+void CSession::SetSocket(SOCKET a_Socket)
+{
+	assert(m_Socket == 0);
+	m_Socket = a_Socket;
+}

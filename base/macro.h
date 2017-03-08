@@ -1,72 +1,83 @@
 /*
 * DEFINE_PTR_BASE is base ptr macro which not provide reference count etc.
+* may memory leak
 */
-#define DEFINE_PTR_BASE(TYPE, NAME, DEFAULT_VALUE) private: \
-TYPE m_p##NAME = DEFAULT_VALUE; \
+#define DEFINE_PTR_BASE(TYPE, NAME, DEFAULT_VALUE, FUNC_GET, FUNC_SET)\
+private: \
+TYPE	m_p##NAME = DEFAULT_VALUE; \
 public: \
-const TYPE Get##NAME()				{ return m_p##NAME; } \
-void Set##NAME(TYPE a_pValue)	{ m_p##NAME = a_pValue; } \
+const TYPE	FUNC_GET()				{ return m_p##NAME; } \
+void		FUNC_SET(TYPE a_pValue)	{ m_p##NAME = a_pValue; } \
 private:
 
 /*
 * danger to use
 * may low efficiency
+* may memory leak
 * may crash ?
 */
-#define DEFINE_TYPE_BASE(TYPE, NAME, DEFAULT_VALUE) private: \
-TYPE m_##NAME = DEFAULT_VALUE; \
+#define DEFINE_TYPE_BASE(TYPE, NAME, DEFAULT_VALUE, FUNC_GET, FUNC_SET)\
+private: \
+TYPE	m_##NAME = DEFAULT_VALUE; \
 public: \
-const TYPE Get##NAME()				{ return m_##NAME; } \
-void Set##NAME(TYPE a_Value)	{ m_##NAME = a_Value; } \
+const TYPE	FUNC_GET()			{ return m_##NAME; } \
+void		FUNC_SET(TYPE a_Value)	{ m_##NAME = a_Value; } \
 private:
 
-#define DEFINE_BOOL(NAME, DEFAULT_VALUE) private: \
-bool m_b##NAME = DEFAULT_VALUE; \
+#define DEFINE_BOOL(NAME, DEFAULT_VALUE, FUNC_GET, FUNC_SET)\
+private: \
+bool	m_b##NAME = DEFAULT_VALUE; \
 public: \
-bool Get##NAME()				{ return m_b##NAME; } \
-void Set##NAME(bool a_bValue)	{ m_b##NAME = a_bValue; } \
+bool	GFUNC_GET()				{ return m_b##NAME; } \
+void	FUNC_SET(bool a_bValue)	{ m_b##NAME = a_bValue; } \
 private:
 
-#define DEFINE_CHAR(NAME, DEFAULT_VALUE) private: \
-char m_c##NAME = DEFAULT_VALUE; \
+#define DEFINE_CHAR(NAME, DEFAULT_VALUE, FUNC_GET, FUNC_SET)\
+private: \
+char	m_c##NAME = DEFAULT_VALUE; \
 public: \
-char Get##NAME()				{ return m_c##NAME; } \
-void Set##NAME(char a_fValue)	{ m_c##NAME = a_cValue; } \
+char	FUNC_GET()				{ return m_c##NAME; } \
+void	FUNC_SET(char a_fValue)	{ m_c##NAME = a_cValue; } \
 private:
 
-#define DEFINE_INT(NAME, DEFAULT_VALUE) private: \
-int m_n##NAME = DEFAULT_VALUE; \
+#define DEFINE_INT(NAME, DEFAULT_VALUE, FUNC_GET, FUNC_SET)\
+private: \
+int		m_n##NAME = DEFAULT_VALUE; \
 public: \
-int Get##NAME()					{ return m_n##NAME; } \
-void Set##NAME(int a_nValue)	{ m_n##NAME = a_nValue; } \
+int		FUNC_GET()				{ return m_n##NAME; } \
+void	FUNC_SET(int a_nValue)	{ m_n##NAME = a_nValue; } \
 private:
 
-#define DEFINE_FLOAT(NAME, DEFAULT_VALUE) private: \
-float m_f##NAME = DEFAULT_VALUE; \
+#define DEFINE_FLOAT(NAME, DEFAULT_VALUE, FUNC_GET, FUNC_SET)\
+private: \
+float	m_f##NAME = DEFAULT_VALUE; \
 public: \
-float Get##NAME()				{ return m_f##NAME; } \
-void Set##NAME(float a_fValue)	{ m_f##NAME = a_fValue; } \
+float	FUNC_GET				{ return m_f##NAME; } \
+void	FUNC_SET(float a_fValue){ m_f##NAME = a_fValue; } \
 private:
 
-#define DEFINE_DOUBLE(NAME, DEFAULT_VALUE) private: \
-DOUBLE m_f##NAME = DEFAULT_VALUE; \
+#define DEFINE_DOUBLE(NAME, DEFAULT_VALUE, FUNC_GET, FUNC_SET)\
+private: \
+DOUBLE	m_f##NAME = DEFAULT_VALUE; \
 public: \
-double Get##NAME()				{ return m_f##NAME; } \
-void Set##NAME(double a_fValue)	{ m_f##NAME = a_fValue; } \
+double	GET_FUNC()					{ return m_f##NAME; } \
+void	SET_FUNC(double a_fValue)	{ m_f##NAME = a_fValue; } \
 private:
 
-#define DEFINE_LONG_LONG(NAME, DEFAULT_VALUE) private: \
-long long m_l##NAME = DEFAULT_VALUE; \
+#define DEFINE_LONG_LONG(NAME, DEFAULT_VALUE, FUNC_GET, FUNC_SET)\
+private: \
+long long	m_l##NAME = DEFAULT_VALUE; \
 public: \
-long long Get##NAME()				{ return m_l##NAME; } \
-void Set##NAME(long long a_lValue)	{ m_l##NAME = a_lValue; } \
+long long	FUNC_GET()						{ return m_l##NAME; } \
+void		FUNC_SET(long long a_lValue)	{ m_l##NAME = a_lValue; } \
 private:
 
-#define DEFINE_STRING(NAME, DEFAULT_VALUE) private: \
+#define DEFINE_STRING(NAME, DEFAULT_VALUE, FUNC_GET, FUNC_SET)\
+private: \
 std::string m_str##NAME = DEFAULT_VALUE; \
 public: \
-const std::string& Get##NAME()					{ return m_str##NAME; } \
-void Set##NAME(const std::string& a_strValue)	{ m_str##NAME = a_strValue; } \
+const	std::string& FUNC_GET()					{ return m_str##NAME; } \
+void	FUNC_SET(const std::string& a_strValue)	{ m_str##NAME = a_strValue; } \
 private:
 
 //#define UNDEF_DEFINE #undef DEFINE_BOOL\

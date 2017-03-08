@@ -1,6 +1,7 @@
 #ifndef _BASE_SESSION_H_
 #define _BASE_SESSION_H_
 
+#include <functional>
 #include <string>
 #include <event2/bufferevent.h>
 #include <event2/event.h>
@@ -10,27 +11,47 @@ class CBuffer;
 
 class CSession
 {
+//public:
+//	enum ERead{
+//
+//	};
+//	enum EWrite{
+//
+//	};
+//	enum EERROR{
+//
+//	};
 public:
 	CSession(event_base* a_pEventBase);
 	~CSession();
 
 	void Connect();
 	void CloseSocket();
-	static void ReConnect(int a_nClientFD, short a_nEvent, void *a_pArg);
+	void ReConnect();
+
 	void OnReadCB(bufferevent *a_pBev, void *a_pArg);
 	void OnWriteCB(bufferevent *a_pBev, void *a_pArg);
-	void OnErrorCB(bufferevent *a_pBen, short a_nEvent, void *a_pArg);
+	void OnErrorCB(short a_nEvent);
+
+	void Send(char* a_pBuffer, int a_nBufferSize);
+
+public:
+	void SetSocket(SOCKET a_Socket);
 
 private:
-	DEFINE_TYPE_BASE(SOCKET, Socket, 0);
-	DEFINE_BOOL(AutoConnect, false);
-	DEFINE_PTR_BASE(CBuffer*, Buffer, nullptr);
-	DEFINE_PTR_BASE(event_base*, EventBase, nullptr);
-	DEFINE_PTR_BASE(char*, ReadBuffer, nullptr);
-	DEFINE_INT(ReadBufferSize, 1024);
-	DEFINE_INT(Port, 0);
-	DEFINE_STRING(ServerName, "");
-	DEFINE_STRING(ServerIP, "");
+	event_base* m_pEventBase = nullptr;
+	bufferevent* m_pBufferEvent = nullptr;
 
+	DEFINE_TYPE_BASE(std::function< void(void*)>, funcReadCB, nullptr, GetReadCB, SetReadCB);
+	DEFINE_TYPE_BASE(std::function< void(void*)>, funcWriteCB, nullptr, GetWriteCB, SetWriteCB);
+	DEFINE_TYPE_BASE(std::function< void(void*)>, funcErrorCB, nullptr, GetErrorCB, SetErrorCB);
+
+	DEFINE_BOOL(AutoConnect, false, GetAutoConnect, SetAutoConnect);
+	DEFINE_TYPE_BASE(SOCKET, Socket, 0, GetSocket, ZZZSetSocket);		//œ˙ªŸ ± Õ∑≈,unfinish
+	DEFINE_PTR_BASE(CBuffer*, ReadBuffer, nullptr, GetReadBuffer, SetReadBuffer);
+	DEFINE_PTR_BASE(CBuffer*, SendBuffer, nullptr, GetSendBuffer, SetSendBuffer);
+	DEFINE_INT(Port, 1024, GetPort, SetPort);
+	DEFINE_STRING(ServerName, "", GetServerName, SetServerName);
+	DEFINE_STRING(ServerIP, "", GetServerIP, SetServerIP);
 };
 #endif

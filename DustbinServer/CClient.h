@@ -11,8 +11,12 @@ public:
 	CClient(CSession* a_pSession);
 	~CClient();
 
+	void OnReadCB(void* a_pArg);
+	void OnWriteCB(void* a_pArg);
+	void OnErrorCB(void* a_pArg);
+
 private:
-	DEFINE_PTR_BASE(CSession*, Session, nullptr);
+	DEFINE_PTR_BASE(CSession*, Session, nullptr, GetSession, SetSession);
 };
 
 #endif

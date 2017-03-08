@@ -16,11 +16,16 @@ CClientManager::~CClientManager()
 	m_mClient.clear();
 }
 
-bool CClientManager::AddPlayer(int a_nPlayerID, CSession *a_pSession)
+//bool CClientManager::AddPlayer(int a_nPlayerID, CSession *a_pSession)
+//{
+//	return false;
+//	assert(m_mClient.find(a_nPlayerID) == m_mClient.end());
+//	m_mClient[a_nPlayerID] = new CClient(a_pSession);
+//}
+
+void CClientManager::AddSession(CSession* a_pSession)
 {
-	return false;
-	assert(m_mClient.find(a_nPlayerID) == m_mClient.end());
-	m_mClient[a_nPlayerID] = new CClient(a_pSession);
+	CClient *pNewClient = new CClient(a_pSession);
 }
 
 bool CClientManager::DeletePlayer(int a_nPlayerID)

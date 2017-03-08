@@ -9,8 +9,6 @@
 #include "macro.h"
 #include "CClientManager.h"
 
-using namespace std;
-
 #define MAXLINK 5
 
 event_base *g_pEventBase;
@@ -30,8 +28,8 @@ int main(int argc, char *argv[])
 	InitNet();
 	InitLog(argv);
 
-	map<std::string, std::string> mDefaultValue;	//cfg文件中的默认值
-	map<std::string, std::pair<std::string, int>> mServer;	//<serverName, <serverIP, Port>>	cfg文件中的要连接的服务器
+	std::map<std::string, std::string> mDefaultValue;	//cfg文件中的默认值
+	std::map<std::string, std::pair<std::string, int>> mServer;	//<serverName, <serverIP, Port>>	cfg文件中的要连接的服务器
 	if (InitConfig(argv[0], mDefaultValue, mServer) != 0)
 	{
 		std::cout << GetLastErr();
@@ -83,7 +81,7 @@ int main(int argc, char *argv[])
 
 	event_base_dispatch(g_pEventBase);
 
-	std::cout << "PROGRAM FINISH" << endl << "press any key to exit" << endl;
+	LOG(INFO) << "PROGRAM FINISH\n" << "press any key to exit";
 	getchar();
 
 	CloseNet();
@@ -93,7 +91,7 @@ int main(int argc, char *argv[])
 
 void LinkToServer(int a_nClientFD, short a_nEvent, void *a_pArg)
 {
-	map<std::string, std::pair<std::string, int>> *serverCfg = static_cast<map<std::string, std::pair<std::string, int>>*>(a_pArg);
+	std::map<std::string, std::pair<std::string, int>> *serverCfg = static_cast<std::map<std::string, std::pair<std::string, int>>*>(a_pArg);
 	for (auto it = serverCfg->begin(); it != serverCfg->end(); ++it)
 	{
 		CSession *pConnect = new CSession(g_pEventBase);
@@ -112,16 +110,16 @@ void onAccept(int a_nClientFD, short a_nEvent, void *a_pArg)
 	SOCKET sockConn = accept(a_nClientFD, (SOCKADDR*)&ClientAddr, &len);
 	if (sockConn > 0)
 	{
-		LOG(INFO) << "New Connect Accept Success. socketID: " << sockConn << endl;
+		LOG(INFO) << "New Connect Accept Success. socketID: " << sockConn;
 	}
 	else
 	{
-		LOG(WARNING) << "New Connect Accept Failed!!!" << endl;
+		LOG(WARNING) << "New Connect Accept Failed!!!";
 		return;
 	}
 	CSession *pNewSession = new CSession(g_pEventBase);
 	pNewSession->SetSocket(sockConn);
-	g_pClientManager->AddPlayer(0, pNewSession);
+	g_pClientManager->AddSession(pNewSession);
 	//g_pClientManager->InitPlayerSession();
 	struct bufferevent *pBufferEvent = bufferevent_socket_new((event_base*)a_pArg, sockConn, BEV_OPT_CLOSE_ON_FREE);
 	bufferevent_setcb(pBufferEvent, onReadCB, onWriteCB, onErrorCB, a_pArg);
@@ -161,15 +159,15 @@ void onErrorCB(bufferevent *a_pBen, short a_nEvent, void *a_pArg)
 	printf("fd=%u ", fd);
 	if (a_nEvent & BEV_EVENT_TIMEOUT)
 	{
-		std::cout << "socket Time out" << endl;
+		LOG(WARNING) << "socket Time out";
 	}
 	else if (a_nEvent & BEV_EVENT_EOF)
 	{
-		std::cout << "connection closed" << endl;
+		LOG(WARNING) << "connection closed";
 	}
 	else if (a_nEvent & BEV_EVENT_ERROR)
 	{
-		std::cout << "Unknown error\n" << endl;
+		LOG(WARNING) << "Unknown error";
 	}
 	bufferevent_free(a_pBen);
 }
@@ -180,15 +178,15 @@ void onErrorCBServer(bufferevent* a_pBen, short a_nEvent, void *a_pArg)
 	printf("fd=%u ", fd);
 	if (a_nEvent & BEV_EVENT_TIMEOUT)
 	{
-		std::cout << "socket Time out" << endl;
+		LOG(WARNING) << "socket Time out";
 	}
 	else if (a_nEvent & BEV_EVENT_EOF)
 	{
-		std::cout << "connection closed" << endl;
+		LOG(WARNING) << "connection closed";
 	}
 	else if (a_nEvent & BEV_EVENT_ERROR)
 	{
-		std::cout << "Unknown error" << endl;
+		LOG(WARNING) << "Unknown error";
 	}
 	bufferevent_free(a_pBen);
 }
@@ -202,5 +200,5 @@ void ConnectServer(std::pair<std::string, int>& serverConfig, SOCKET& a_Socket)
 	addrSrv.sin_family = AF_INET;
 	addrSrv.sin_port = htons(serverConfig.second);
 	int nResult = connect(a_Socket, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR));
-	cout << "ConnectServer: " << serverConfig.first << ":" << serverConfig.second << ". Result:" << nResult << endl;
+	LOG(INFO) << "ConnectServer: " << serverConfig.first << ":" << serverConfig.second << ". Result:" << nResult;
 }
