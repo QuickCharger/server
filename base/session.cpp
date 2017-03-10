@@ -27,11 +27,11 @@ void CSession::Connect()
 	addrSrv.sin_addr.S_un.S_addr = inet_addr(m_strServerIP.c_str());
 	addrSrv.sin_family = AF_INET;
 	addrSrv.sin_port = htons(m_nPort);
-	int nResult = connect(m_Socket, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR));
-	LOG(INFO) << "ConnectServer: " << m_strServerName << ":" << m_nPort << ". Result:" << nResult;
-	if (nResult == 0)
+	if (connect(m_Socket, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR)) == 0)
 	{
+		LOG(INFO) << "ConnectServer: " << m_strServerName << ":" << m_nPort << " success";
 		evutil_make_socket_nonblocking(m_Socket);
+		assert(m_pBufferEvent == nullptr);
 		m_pBufferEvent = bufferevent_socket_new(m_pEventBase, m_Socket, BEV_OPT_CLOSE_ON_FREE);
 		//bufferevent_setcb(pBufferEvent, OnReadCB, OnWriteCB, OnErrorCB, this);
 		bufferevent_setcb(
@@ -53,7 +53,6 @@ void CSession::Connect()
 	}
 	else if (m_bAutoConnect)
 	{
-		LOG(WARNING) << "new Timer";
 		event* evListen2 = evtimer_new(m_pEventBase, 
 			[](int, short, void *a_pArg){
 			CSession* pSession = static_cast<CSession*>(a_pArg);
@@ -132,8 +131,11 @@ void CSession::OnWriteCB(bufferevent *a_pBev, void *a_pArg)
 void CSession::OnErrorCB(short a_nEvent)
 {
 	LOG(INFO) << "OnErrorCB";
-	bufferevent_free(m_pBufferEvent);
-	m_pBufferEvent = nullptr;
+	if (m_pBufferEvent != nullptr)
+	{
+		bufferevent_free(m_pBufferEvent);
+		m_pBufferEvent = nullptr;
+	}
 	if (a_nEvent & BEV_EVENT_TIMEOUT)
 	{
 		LOG(WARNING) << "socket Time out";
