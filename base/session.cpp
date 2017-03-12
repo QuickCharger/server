@@ -15,14 +15,16 @@ CSession::CSession(event_base* a_pEventBase)
 CSession::~CSession()
 {
 	m_pEventBase = nullptr;
+	if (m_Socket != 0)
+	{
+		closesocket(m_Socket);
+	}
 }
 
 void CSession::Connect()
 {
-	if (m_Socket == 0)
-	{
-		m_Socket = socket(AF_INET, SOCK_STREAM, 0);
-	}
+	assert(m_Socket == 0);
+	m_Socket = socket(AF_INET, SOCK_STREAM, 0);
 	SOCKADDR_IN addrSrv;
 	addrSrv.sin_addr.S_un.S_addr = inet_addr(m_strServerIP.c_str());
 	addrSrv.sin_family = AF_INET;
@@ -61,7 +63,7 @@ void CSession::Connect()
 			this);
 
 		timeval tv;
-		tv.tv_sec = 1;
+		tv.tv_sec = 5;
 		tv.tv_usec = 0;
 		int nResult = evtimer_add(evListen2, &tv);
 	}
@@ -81,10 +83,8 @@ void CSession::CloseSocket()
 void CSession::ReConnect()
 {
 	CloseSocket();
-	if (m_bAutoConnect)
-	{
-		Connect();
-	}
+	Connect();
+
 }
 
 void CSession::OnReadCB(bufferevent *a_pBev, void *a_pArg)

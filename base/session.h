@@ -25,6 +25,7 @@ public:
 	CSession(event_base* a_pEventBase);
 	~CSession();
 
+	void InitSock();
 	void Connect();
 	void CloseSocket();
 	void ReConnect();
@@ -47,7 +48,7 @@ private:
 	DEFINE_TYPE_BASE(std::function< void(void*)>, funcErrorCB, nullptr, GetErrorCB, SetErrorCB);
 
 	DEFINE_BOOL(AutoConnect, false, GetAutoConnect, SetAutoConnect);
-	DEFINE_TYPE_BASE(SOCKET, Socket, 0, GetSocket, ZZZSetSocket);		//œ˙ªŸ ± Õ∑≈,unfinish
+	DEFINE_TYPE_BASE(SOCKET, Socket, 0, GetSocket, ZZZSetSocket);
 	DEFINE_PTR_BASE(CBuffer*, ReadBuffer, nullptr, GetReadBuffer, SetReadBuffer);
 	DEFINE_PTR_BASE(CBuffer*, SendBuffer, nullptr, GetSendBuffer, SetSendBuffer);
 	DEFINE_INT(Port, 1024, GetPort, SetPort);
