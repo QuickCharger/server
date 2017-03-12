@@ -23,6 +23,27 @@ CSession::~CSession()
 
 void CSession::Connect()
 {
+	addConnectTimer();
+}
+
+void CSession::CloseSocket()
+{
+	if (m_Socket != 0)
+	{
+		LOG(INFO) << "socket close. fd: " << m_Socket;
+		closesocket(m_Socket);
+		m_Socket = 0;
+	}
+}
+
+//void CSession::ReConnect()
+//{
+//	CloseSocket();
+//	Connect();
+//}
+
+void CSession::DoConnect()
+{
 	assert(m_Socket == 0);
 	m_Socket = socket(AF_INET, SOCK_STREAM, 0);
 	SOCKADDR_IN addrSrv;
@@ -31,7 +52,7 @@ void CSession::Connect()
 	addrSrv.sin_port = htons(m_nPort);
 	if (connect(m_Socket, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR)) == 0)
 	{
-		LOG(INFO) << "ConnectServer: " << m_strServerName << ":" << m_nPort << " success";
+		LOG(INFO) << "ConnectServer: " << m_strServerName << ":" << m_nPort << " success. Socket: " << m_Socket;
 		evutil_make_socket_nonblocking(m_Socket);
 		assert(m_pBufferEvent == nullptr);
 		m_pBufferEvent = bufferevent_socket_new(m_pEventBase, m_Socket, BEV_OPT_CLOSE_ON_FREE);
@@ -53,38 +74,15 @@ void CSession::Connect()
 			this);
 		bufferevent_enable(m_pBufferEvent, EV_READ | EV_WRITE | EV_PERSIST);
 	}
-	else if (m_bAutoConnect)
+	else
 	{
-		event* evListen2 = evtimer_new(m_pEventBase, 
-			[](int, short, void *a_pArg){
-			CSession* pSession = static_cast<CSession*>(a_pArg);
-			pSession->ReConnect();
-		},
-			this);
-
-		timeval tv;
-		tv.tv_sec = 5;
-		tv.tv_usec = 0;
-		int nResult = evtimer_add(evListen2, &tv);
+		CloseSocket();
+		if (m_bAutoConnect)
+		{
+			addConnectTimer();
+		}
+		LOG(INFO) << "ConnectServer: " << m_strServerName << ":" << m_nPort << " failed.";
 	}
-	LOG(INFO) << "fd:" << m_Socket << ". IP:" << m_strServerIP.c_str() << ". Port:" << m_nPort;
-}
-
-void CSession::CloseSocket()
-{
-	if (m_Socket != 0)
-	{
-		LOG(INFO) << "socket close. fd: " << m_Socket;
-		closesocket(m_Socket);
-		m_Socket = 0;
-	}
-}
-
-void CSession::ReConnect()
-{
-	CloseSocket();
-	Connect();
-
 }
 
 void CSession::OnReadCB(bufferevent *a_pBev, void *a_pArg)
@@ -143,7 +141,11 @@ void CSession::OnErrorCB(short a_nEvent)
 	else if (a_nEvent & BEV_EVENT_EOF)
 	{
 		LOG(WARNING) << "connection closed";
-		ReConnect();
+		CloseSocket();
+		if (m_bAutoConnect)
+		{
+			addConnectTimer();
+		}
 	}
 	else if (a_nEvent & BEV_EVENT_ERROR)
 	{
@@ -173,4 +175,19 @@ void CSession::SetSocket(SOCKET a_Socket)
 {
 	assert(m_Socket == 0);
 	m_Socket = a_Socket;
+}
+
+void CSession::addConnectTimer()
+{
+	event* evListen2 = evtimer_new(m_pEventBase,
+		[](int, short, void *a_pArg){
+		CSession* pSession = static_cast<CSession*>(a_pArg);
+		pSession->DoConnect();
+	},
+		this);
+
+	timeval tv;
+	tv.tv_sec = 2;
+	tv.tv_usec = 0;
+	int nResult = evtimer_add(evListen2, &tv);
 }

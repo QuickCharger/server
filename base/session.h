@@ -28,7 +28,8 @@ public:
 	void InitSock();
 	void Connect();
 	void CloseSocket();
-	void ReConnect();
+	//void ReConnect();
+	void DoConnect();
 
 	void OnReadCB(bufferevent *a_pBev, void *a_pArg);
 	void OnWriteCB(bufferevent *a_pBev, void *a_pArg);
@@ -40,6 +41,8 @@ public:
 	void SetSocket(SOCKET a_Socket);
 
 private:
+	void addConnectTimer();
+
 	event_base* m_pEventBase = nullptr;
 	bufferevent* m_pBufferEvent = nullptr;
 
