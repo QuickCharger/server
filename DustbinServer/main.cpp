@@ -7,7 +7,7 @@
 #include "log.h"
 #include "session.h"
 #include "macro.h"
-#include "CClientManager.h"
+#include "client/CClientManager.h"
 
 #define MAXLINK 5
 
@@ -120,7 +120,7 @@ void onAccept(int a_nClientFD, short a_nEvent, void *a_pArg)
 	}
 	CSession *pNewSession = new CSession(g_pEventBase);
 	pNewSession->SetSocket(sockConn);
-	g_pClientManager->AddSession(pNewSession);
+	//g_pClientManager->AddSession(pNewSession);
 	//g_pClientManager->InitPlayerSession();
 	struct bufferevent *pBufferEvent = bufferevent_socket_new((event_base*)a_pArg, sockConn, BEV_OPT_CLOSE_ON_FREE);
 	bufferevent_setcb(pBufferEvent, onReadCB, onWriteCB, onErrorCB, a_pArg);

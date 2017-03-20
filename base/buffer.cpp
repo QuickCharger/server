@@ -35,28 +35,28 @@ int CBuffer::Append(const char* a_pData, int a_uSize)
 	return eReadBufferStateOK;
 }
 
-int CBuffer::CheckParse()
-{
-	int nSize = *(int*)m_pBuffer;
-	//char ch[4];
-	//ch[0] = m_pRecvBuf[0];
-	//ch[1] = m_pRecvBuf[1];
-	//ch[2] = m_pRecvBuf[2];
-	//ch[3] = m_pRecvBuf[3];
-	//int nSize = atoi(ch);
-	if (nSize > m_nBufferSize)
-	{
-		return eReadBufferStateBufHeadErr;
-	}
-	else if (nSize < m_nCurrentSize)
-	{
-		return eReadBufferStateOK;
-	}
-	else
-	{
-		return eReadBufferStateCanRead;
-	}
-}
+//int CBuffer::CheckParse()
+//{
+//	int nSize = *(int*)m_pBuffer;
+//	//char ch[4];
+//	//ch[0] = m_pRecvBuf[0];
+//	//ch[1] = m_pRecvBuf[1];
+//	//ch[2] = m_pRecvBuf[2];
+//	//ch[3] = m_pRecvBuf[3];
+//	//int nSize = atoi(ch);
+//	if (nSize > m_nBufferSize)
+//	{
+//		return eReadBufferStateBufHeadErr;
+//	}
+//	else if (nSize < m_nCurrentSize)
+//	{
+//		return eReadBufferStateOK;
+//	}
+//	else
+//	{
+//		return eReadBufferStateCanRead;
+//	}
+//}
 
 void CBuffer::ClearBuffer()
 {

@@ -1,4 +1,4 @@
-#ifndef _BASE_SESSION_H_
+﻿#ifndef _BASE_SESSION_H_
 #define _BASE_SESSION_H_
 
 #include <functional>
@@ -35,10 +35,7 @@ public:
 	void OnWriteCB(bufferevent *a_pBev, void *a_pArg);
 	void OnErrorCB(short a_nEvent);
 
-	void Send(char* a_pBuffer, int a_nBufferSize);
-
-public:
-	void SetSocket(SOCKET a_Socket);
+	void Send(const char* a_pBuffer, int a_nBufferSize);
 
 private:
 	void addConnectTimer();
@@ -46,16 +43,25 @@ private:
 	event_base* m_pEventBase = nullptr;
 	bufferevent* m_pBufferEvent = nullptr;
 
-	DEFINE_TYPE_BASE(std::function< void(void*)>, funcReadCB, nullptr, GetReadCB, SetReadCB);
-	DEFINE_TYPE_BASE(std::function< void(void*)>, funcWriteCB, nullptr, GetWriteCB, SetWriteCB);
-	DEFINE_TYPE_BASE(std::function< void(void*)>, funcErrorCB, nullptr, GetErrorCB, SetErrorCB);
+	DEFINE_TYPE_BASE(std::function< void(void*)>, m_funcReadCB, nullptr, GetReadCB, SetReadCB);
+	DEFINE_TYPE_BASE(std::function< void(void*)>, m_funcWriteCB, nullptr, GetWriteCB, SetWriteCB);
+	DEFINE_TYPE_BASE(std::function< void(void*)>, m_funcErrorCB, nullptr, GetErrorCB, SetErrorCB);
 
-	DEFINE_BOOL(AutoConnect, false, GetAutoConnect, SetAutoConnect);
-	DEFINE_TYPE_BASE(SOCKET, Socket, 0, GetSocket, ZZZSetSocket);
-	DEFINE_PTR_BASE(CBuffer*, ReadBuffer, nullptr, GetReadBuffer, SetReadBuffer);
-	DEFINE_PTR_BASE(CBuffer*, SendBuffer, nullptr, GetSendBuffer, SetSendBuffer);
-	DEFINE_INT(Port, 1024, GetPort, SetPort);
-	DEFINE_STRING(ServerName, "", GetServerName, SetServerName);
-	DEFINE_STRING(ServerIP, "", GetServerIP, SetServerIP);
+	/*
+	* 发送数据之前的封装回调
+	*/
+	DEFINE_TYPE_BASE(std::function< void(const char*, int&, char**)>, m_funcPackCB, nullptr, GetPackCB, SetPackCB);
+	/*
+	* 收到数据后的回调
+	*/
+	DEFINE_TYPE_BASE(std::function< bool(const char*, int)>, m_funcUnPackCB, nullptr, GetUnPackCB, SetUnPackCB);
+
+	DEFINE_TYPE_BASE(bool,		m_bAutoConnect, false, GetAutoConnect, SetAutoConnect);
+	DEFINE_TYPE_BASE(SOCKET,	m_Socket, 0, GetSocket, SetSocket);
+	DEFINE_TYPE_BASE(CBuffer*,	m_pReadBuffer, nullptr, GetReadBuffer, SetReadBuffer);
+	DEFINE_TYPE_BASE(CBuffer*,	m_pSendBuffer, nullptr, GetSendBuffer, SetSendBuffer);
+	DEFINE_TYPE_BASE(int,		m_nPort, 1024, GetPort, SetPort);
+	DEFINE_TYPE_REFER(std::string,	m_strServerName,	"", GetServerName, SetServerName);
+	DEFINE_TYPE_REFER(std::string,	m_strServerIP,		"", GetServerIP, SetServerIP);
 };
 #endif

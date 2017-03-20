@@ -25,6 +25,7 @@ CClient::~CClient()
 
 void CClient::OnReadCB(void* a_pArg)
 {
+	LOG(INFO) << "Client. OnReadCB";
 	int nBufSize = *(int*)a_pArg;
 	char *pBuf = ((char*)a_pArg) + nBufSize;
 	test msg;
@@ -36,10 +37,10 @@ void CClient::OnReadCB(void* a_pArg)
 
 void CClient::OnWriteCB(void* a_pArg)
 {
-
+	LOG(INFO) << "Client. OnWriteCB";
 }
 
 void CClient::OnErrorCB(void* a_pArg)
 {
-
+	LOG(INFO) << "Client. OnErrorCB";
 }

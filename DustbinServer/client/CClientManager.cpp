@@ -47,4 +47,3 @@ CClient* CClientManager::GetPlayer(int a_nPlayerID)
 	assert(it->second != nullptr);
 	return it->second;
 }
-

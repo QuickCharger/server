@@ -18,10 +18,18 @@ private:
 */
 #define DEFINE_TYPE_BASE(TYPE, NAME, DEFAULT_VALUE, FUNC_GET, FUNC_SET)\
 private: \
-TYPE	m_##NAME = DEFAULT_VALUE; \
+TYPE	NAME = DEFAULT_VALUE; \
 public: \
-const TYPE	FUNC_GET()			{ return m_##NAME; } \
-void		FUNC_SET(TYPE a_Value)	{ m_##NAME = a_Value; } \
+const TYPE	FUNC_GET()			{ return NAME; } \
+void		FUNC_SET(TYPE a_Value)	{ NAME = a_Value; } \
+private:
+
+#define DEFINE_TYPE_REFER(TYPE, NAME, DEFAULT_VALUE, FUNC_GET, FUNC_SET)\
+private: \
+TYPE	NAME = DEFAULT_VALUE; \
+public: \
+const TYPE&	FUNC_GET()			{ return NAME; } \
+void		FUNC_SET(const TYPE& a_Value)	{ NAME = a_Value; } \
 private:
 
 #define DEFINE_BOOL(NAME, DEFAULT_VALUE, FUNC_GET, FUNC_SET)\

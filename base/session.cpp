@@ -36,12 +36,6 @@ void CSession::CloseSocket()
 	}
 }
 
-//void CSession::ReConnect()
-//{
-//	CloseSocket();
-//	Connect();
-//}
-
 void CSession::DoConnect()
 {
 	assert(m_Socket == 0);
@@ -96,12 +90,12 @@ void CSession::OnReadCB(bufferevent *a_pBev, void *a_pArg)
 		CSession* pSession = static_cast<CSession*>(a_pArg);
 		m_pReadBuffer->Append(pBuf, nReadSize);
 	}
-	int nState = m_pReadBuffer->CheckParse();
-	if (nState == CBuffer::eReadBufferStateCanRead)
+	//int nState = m_pReadBuffer->CheckParse();
+	if (m_funcUnPackCB(m_pReadBuffer->GetBuffer(), m_pReadBuffer->GetCurrentSize()))
 	{
 		m_funcReadCB((void*)m_pReadBuffer->GetBuffer());
 	}
-	else if (nState != CBuffer::eReadBufferStateOK)
+	else
 	{
 		// TODO
 	}
@@ -111,7 +105,7 @@ void CSession::OnReadCB(bufferevent *a_pBev, void *a_pArg)
 
 void CSession::OnWriteCB(bufferevent *a_pBev, void *a_pArg)
 {
-	LOG(INFO) << "OnWriteCB";
+	//LOG(INFO) << "OnWriteCB";
 	if (m_pSendBuffer->GetCurrentSize() != 0)
 	{
 		if (bufferevent_write(a_pBev, m_pSendBuffer->GetBuffer(), m_pSendBuffer->GetCurrentSize()) == 0)
@@ -124,6 +118,7 @@ void CSession::OnWriteCB(bufferevent *a_pBev, void *a_pArg)
 			m_funcWriteCB((void*)(1));
 		}
 	}
+	//m_funcWriteCB((void*)(0));
 }
 
 void CSession::OnErrorCB(short a_nEvent)
@@ -157,9 +152,14 @@ void CSession::OnErrorCB(short a_nEvent)
 	}
 }
 
-void CSession::Send(char* a_pBuffer, int a_nSize)
+void CSession::Send(const char* a_pBuffer, int a_nSize)
 {
-	m_pSendBuffer->Append(a_pBuffer, a_nSize);
+	char *pBuf = nullptr;
+	if (m_funcPackCB != nullptr)
+	{
+		m_funcPackCB(a_pBuffer, a_nSize, &pBuf);
+	}
+	m_pSendBuffer->Append(pBuf, a_nSize);
 	if (bufferevent_write(m_pBufferEvent, m_pSendBuffer->GetBuffer(), m_pSendBuffer->GetCurrentSize()) == 0)
 	{
 		m_funcWriteCB((void*)m_pSendBuffer->GetBuffer());
@@ -169,12 +169,10 @@ void CSession::Send(char* a_pBuffer, int a_nSize)
 	{
 		m_funcWriteCB((void*)(1));
 	}
-}
-
-void CSession::SetSocket(SOCKET a_Socket)
-{
-	assert(m_Socket == 0);
-	m_Socket = a_Socket;
+	if (pBuf != nullptr)
+	{
+		delete[]pBuf;
+	}
 }
 
 void CSession::addConnectTimer()
