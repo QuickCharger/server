@@ -7,7 +7,3 @@
 //#include <event_struct.h>
 #include <event2/event_compat.h>
 #include <event2/bufferevent.h>
-
-#include "func.h"
-#include "minidump.h"
-#include "netbase.h"

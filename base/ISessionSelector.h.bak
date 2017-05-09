@@ -1,0 +1,16 @@
+#ifndef _BASE_ISESSIONSELECTOR_H_
+#define _BASE_ISESSIONSELECTOR_H_
+
+class CSession;
+
+class ISessionSelector
+{
+public:
+	ISessionSelector() {};
+	virtual ~ISessionSelector() {};
+
+	virtual bool ParseData(const char* a_pCh, int count) = 0;
+	virtual bool OnConnect(CSession*) = 0;
+};
+
+#endif

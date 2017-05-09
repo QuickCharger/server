@@ -1,0 +1,12 @@
+#include "ISessionSelector.h"
+#include "ErrRecord.h"
+
+class SessionSelector : public ErrRecord<SessionSelector>, public ISessionSelector
+{
+public:
+	SessionSelector();
+	virtual ~SessionSelector();
+
+	virtual bool ParseData(const char* a_pCh, int count);
+	virtual bool OnConnect(CSession*);
+};

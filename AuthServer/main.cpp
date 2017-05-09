@@ -21,8 +21,8 @@ void onErrorCB(bufferevent *a_pBen, short a_nEvent, void *a_pArg);
 
 int main(int argc, char *argv[])
 {
-	InitMinDump();
-	InitNet();
+	//InitMinDump();
+	//InitNet();
 
 	for (int i = 0; i < MAXLINK; ++i)
 	{
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 	cout << "PROGRAM FINISH" << endl << "press any key to exit" << endl;
 	getchar();
 
-	CloseNet();
+	//CloseNet();
 
 	return 0;
 }

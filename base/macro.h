@@ -2,6 +2,9 @@
 * DEFINE_PTR_BASE is base ptr macro which not provide reference count etc.
 * may memory leak
 */
+#ifndef _BASE_MACRO_H_
+#define _BASE_MACRO_H_
+
 #define DEFINE_PTR_BASE(TYPE, NAME, DEFAULT_VALUE, FUNC_GET, FUNC_SET)\
 private: \
 TYPE	m_p##NAME = DEFAULT_VALUE; \
@@ -95,3 +98,5 @@ private:
 //	#undef DEFINE_DOUBLE\
 //	#undef DEFINE_LONG_LONG\
 //#undef UNDEF_DEFINE
+
+#endif

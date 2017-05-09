@@ -22,8 +22,8 @@ void ConnectServer(std::pair<std::string, int>& serverConfig, SOCKET& socket);
 
 int main(int argc, char *argv[])
 {
-	InitMinDump();
-	InitNet();
+	//InitMinDump();
+	//InitNet();
 	InitLog(argv);
 
 	std::map<std::string, std::string> mDefaultValue;	//cfg文件中的默认值
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 	LOG(INFO) << "PROGRAM FINISH\n" << "press any key to exit";
 	getchar();
 
-	CloseNet();
+	//CloseNet();
 
 	return 0;
 }

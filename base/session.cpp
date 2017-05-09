@@ -4,12 +4,32 @@
 #include <time.h>
 #include "buffer.h"
 #include "log.h"
+#include "IServer.h"
+//#include "ISessionSelector.h"
 
-CSession::CSession(event_base* a_pEventBase)
+CSession::CSession(IServer *a_pServer, event_base* a_pEventBase, SOCKET a_Socket)
 {
+	m_Server = a_pServer;
 	m_pEventBase = a_pEventBase;
 	m_pReadBuffer = new CBuffer(4000);	//4KB per buffer
 	m_pSendBuffer = new CBuffer(4000);	
+	m_Socket = a_Socket;
+
+	initSocket();
+}
+
+CSession::CSession(IServer *a_pServer, event_base *a_pEventBase, const std::string& a_strName, const std::string& a_strIP, int a_nPort, bool a_bAutoConnect)
+{
+	m_Server = a_pServer;
+	m_pEventBase = a_pEventBase;
+	m_pReadBuffer = new CBuffer(4000);
+	m_pSendBuffer = new CBuffer(4000);
+	m_strServerName = a_strName;
+	m_strServerIP = a_strIP;
+	m_nPort = a_nPort;
+	m_bAutoConnect = a_bAutoConnect;
+	//Connect();
+	addConnectTimer();
 }
 
 CSession::~CSession()
@@ -19,12 +39,22 @@ CSession::~CSession()
 	{
 		closesocket(m_Socket);
 	}
+	if (m_pReadBuffer != nullptr)
+	{
+		delete m_pReadBuffer;
+		m_pReadBuffer = nullptr;
+	}
+	if (m_pSendBuffer != nullptr)
+	{
+		delete m_pSendBuffer;
+		m_pSendBuffer = nullptr;
+	}
 }
 
-void CSession::Connect()
-{
-	addConnectTimer();
-}
+//void CSession::Connect()
+//{
+//	addConnectTimer();
+//}
 
 void CSession::CloseSocket()
 {
@@ -47,26 +77,29 @@ void CSession::DoConnect()
 	if (connect(m_Socket, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR)) == 0)
 	{
 		LOG(INFO) << "ConnectServer: " << m_strServerName << ":" << m_nPort << " success. Socket: " << m_Socket;
-		evutil_make_socket_nonblocking(m_Socket);
-		assert(m_pBufferEvent == nullptr);
-		m_pBufferEvent = bufferevent_socket_new(m_pEventBase, m_Socket, BEV_OPT_CLOSE_ON_FREE);
-		//bufferevent_setcb(pBufferEvent, OnReadCB, OnWriteCB, OnErrorCB, this);
-		bufferevent_setcb(
-			m_pBufferEvent,
-			[](bufferevent *a_pBev, void *a_pArg){
-			CSession* pSession = static_cast<CSession*>(a_pArg);
-			pSession->OnReadCB(a_pBev, a_pArg);
-		},
-			[](bufferevent *a_pBev, void *a_pArg){
-			CSession* pSession = static_cast<CSession*>(a_pArg);
-			pSession->OnWriteCB(a_pBev, a_pArg);
-		},
-			[](bufferevent *a_pBen, short a_nEvent, void *a_pArg){
-			CSession* pSession = static_cast<CSession*>(a_pArg);
-			pSession->OnErrorCB(a_nEvent);
-		},
-			this);
-		bufferevent_enable(m_pBufferEvent, EV_READ | EV_WRITE | EV_PERSIST);
+		//evutil_make_socket_nonblocking(m_Socket);
+		//assert(m_pBufferEvent == nullptr);
+		//m_pBufferEvent = bufferevent_socket_new(m_pEventBase, m_Socket, BEV_OPT_CLOSE_ON_FREE);
+		////bufferevent_setcb(pBufferEvent, OnReadCB, OnWriteCB, OnErrorCB, this);
+		//bufferevent_setcb(
+		//	m_pBufferEvent,
+		//	[](bufferevent *a_pBev, void *a_pArg){
+		//	CSession* pSession = static_cast<CSession*>(a_pArg);
+		//	pSession->OnReadCB(a_pBev, a_pArg);
+		//},
+		//	[](bufferevent *a_pBev, void *a_pArg){
+		//	CSession* pSession = static_cast<CSession*>(a_pArg);
+		//	pSession->OnWriteCB(a_pBev, a_pArg);
+		//},
+		//	[](bufferevent *a_pBen, short a_nEvent, void *a_pArg){
+		//	CSession* pSession = static_cast<CSession*>(a_pArg);
+		//	pSession->OnErrorCB(a_nEvent);
+		//},
+		//	this);
+		//bufferevent_enable(m_pBufferEvent, EV_READ | EV_WRITE | EV_PERSIST);
+		initSocket();
+		//m_funcConnectCB();
+		m_Server->OnConnect(this);
 	}
 	else
 	{
@@ -81,25 +114,41 @@ void CSession::DoConnect()
 
 void CSession::OnReadCB(bufferevent *a_pBev, void *a_pArg)
 {
+
 #define MAXREADBUFFER 1024
 	char *pBuf = new char[MAXREADBUFFER];
+	memset(pBuf, 0, MAXREADBUFFER);
+	//pBuf¿ÉÄÜÒç³ö£¬unfinish
 	int nReadSize;
 	while (nReadSize = bufferevent_read(a_pBev, pBuf, MAXREADBUFFER), nReadSize > 0)
 	{
-		memset(pBuf, 0, MAXREADBUFFER);
 		CSession* pSession = static_cast<CSession*>(a_pArg);
 		m_pReadBuffer->Append(pBuf, nReadSize);
+		memset(pBuf, 0, MAXREADBUFFER);
 	}
-	//int nState = m_pReadBuffer->CheckParse();
-	if (m_funcUnPackCB(m_pReadBuffer->GetBuffer(), m_pReadBuffer->GetCurrentSize()))
+	//if (m_funcUnPackCB == nullptr || m_funcReadCB == nullptr)
+	//{
+	//	if (m_SessionSelector != nullptr)
+	//	{
+	//		m_SessionSelector->ParseData(m_pReadBuffer->GetBuffer(), m_pReadBuffer->GetCurrentSize());
+	//	}
+	//	return;
+	//}
+	//else 
+
+	char *pDecodeBuf = 0;
+	if (m_Server->OnUnPackCB(m_pReadBuffer->GetBuffer(), m_pReadBuffer->GetCurrentSize(), &pDecodeBuf))
 	{
-		m_funcReadCB((void*)m_pReadBuffer->GetBuffer());
+		m_pReadBuffer->ClearBuffer();
+		m_Server->OnReadCB((void*)pDecodeBuf);
+		//m_Server->OnReadCB(pDecodeBuf);
 	}
 	else
 	{
 		// TODO
 	}
 	delete[]pBuf;
+	delete[]pDecodeBuf;
 #undef MAXREADBUFFER
 }
 
@@ -110,12 +159,12 @@ void CSession::OnWriteCB(bufferevent *a_pBev, void *a_pArg)
 	{
 		if (bufferevent_write(a_pBev, m_pSendBuffer->GetBuffer(), m_pSendBuffer->GetCurrentSize()) == 0)
 		{
-			m_funcWriteCB((void*)m_pSendBuffer->GetBuffer());
+			m_Server->OnWriteCB((void*)m_pSendBuffer->GetBuffer());
 			m_pSendBuffer->ClearBuffer();
 		}
 		else
 		{
-			m_funcWriteCB((void*)(1));
+			m_Server->OnWriteCB((void*)1);
 		}
 	}
 	//m_funcWriteCB((void*)(0));
@@ -148,26 +197,23 @@ void CSession::OnErrorCB(short a_nEvent)
 	}
 	else
 	{
-		LOG(WARNING) << "unknown error";
+		LOG(WARNING) << "unknown error. Event Code: " << a_nEvent;
 	}
 }
 
 void CSession::Send(const char* a_pBuffer, int a_nSize)
 {
 	char *pBuf = nullptr;
-	if (m_funcPackCB != nullptr)
-	{
-		m_funcPackCB(a_pBuffer, a_nSize, &pBuf);
-	}
+	m_Server->OnPackCB(a_pBuffer, a_nSize, &pBuf);
 	m_pSendBuffer->Append(pBuf, a_nSize);
 	if (bufferevent_write(m_pBufferEvent, m_pSendBuffer->GetBuffer(), m_pSendBuffer->GetCurrentSize()) == 0)
 	{
-		m_funcWriteCB((void*)m_pSendBuffer->GetBuffer());
+		m_Server->OnWriteCB((void*)m_pSendBuffer->GetBuffer());
 		m_pSendBuffer->ClearBuffer();
 	}
 	else
 	{
-		m_funcWriteCB((void*)(1));
+		m_Server->OnWriteCB((void*)1);
 	}
 	if (pBuf != nullptr)
 	{
@@ -188,4 +234,29 @@ void CSession::addConnectTimer()
 	tv.tv_sec = 2;
 	tv.tv_usec = 0;
 	int nResult = evtimer_add(evListen2, &tv);
+}
+
+void CSession::initSocket()
+{
+	evutil_make_socket_nonblocking(m_Socket);
+	assert(m_pBufferEvent == nullptr);
+	m_pBufferEvent = bufferevent_socket_new(m_pEventBase, m_Socket, BEV_OPT_CLOSE_ON_FREE);
+	bufferevent_setcb(
+		m_pBufferEvent,
+		[](bufferevent *a_pBev, void *a_pArg){
+		CSession* pSession = static_cast<CSession*>(a_pArg);
+		pSession->OnReadCB(a_pBev, a_pArg);
+	},
+		[](bufferevent *a_pBev, void *a_pArg){
+		CSession* pSession = static_cast<CSession*>(a_pArg);
+		pSession->OnWriteCB(a_pBev, a_pArg);
+	},
+		[](bufferevent *a_pBen, short a_nEvent, void *a_pArg){
+		CSession* pSession = static_cast<CSession*>(a_pArg);
+		pSession->OnErrorCB(a_nEvent);
+	},
+		this);
+	bufferevent_enable(m_pBufferEvent, EV_READ | EV_WRITE | EV_PERSIST);
+
+	m_Server->SetCallBack();
 }

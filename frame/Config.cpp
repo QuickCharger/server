@@ -1,64 +1,28 @@
-#include "base.h"
+#include "Config.h"
 #include <iostream>
-#include <vector>
+#include "base.h"
 #include "func.h"
 
-using namespace std;
-
-#define ERRSIZE 1000
-char chLastErr[ERRSIZE];
-
-void setLastErr(const char* a_pCh)
+CConfig* CConfig::GetInstance()
 {
-	memset(chLastErr, 0, ERRSIZE);
-	memcpy(chLastErr, a_pCh, strlen(a_pCh) >= ERRSIZE ? ERRSIZE - 1 : strlen(a_pCh));
+	static CConfig conf;
+	return &conf;
 }
 
-const char* GetLastErr()
-{
-	return chLastErr;
-}
-
-void ReadFile(const char* a_pFileName, std::string& a_strContext)
-{
-	FILE *pFile;
-	pFile = fopen(a_pFileName, "r");
-	if (pFile == NULL)
-	{
-		setLastErr("Open file failed.");
-		return;
-	}
-
-	fseek(pFile, 0L, SEEK_END);
-	int nFileSize = ftell(pFile);
-	char *pContext = (char *)malloc(nFileSize + 1);
-	memset(pContext, 0, nFileSize + 1);
-	if (pContext == nullptr)
-	{
-		setLastErr("malloc failed.");
-		return;
-	}
-	fseek(pFile, 0L, SEEK_SET);
-	fread(pContext, nFileSize, 1, pFile);
-	pContext[nFileSize] = 0;
-
-	a_strContext = pContext;
-	free(pContext);
-	fclose(pFile);
-}
-
-int InitConfig(const char* a_pFileName, std::map<std::string, std::string>& a_mDefaultValue, std::map<std::string, std::pair<std::string, int>>& a_mServer)
+bool CConfig::InitConfig(const char *a_pFileName)
 {
 	std::string strConfigName = Func::Truncate(a_pFileName, '.') + ".cfg";
 	if (strConfigName.size() < 4)
 	{
-		return 1;
+		SetErr("file name too short");
+		return false;
 	}
 	std::string strContext;
 	ReadFile(strConfigName.c_str(), strContext);
 	if (strContext.size() == 0)
 	{
-		return 2;
+		SetErr("context open failed");
+		return false;
 	}
 
 	std::vector<std::string > vSplit;
@@ -74,7 +38,7 @@ int InitConfig(const char* a_pFileName, std::map<std::string, std::string>& a_mD
 				std::string str(*it, strlen("set int "));
 				std::string strType(str.c_str(), str.find_first_of("="));
 				std::string strValue(str, str.find_first_of("=") + 1);
-				a_mDefaultValue[strType] = strValue;
+				m_DefaultValue[strType] = strValue;
 				continue;
 			}
 			else if (strncmp(it->c_str(), "set float ", strlen("set float ")) == 0)
@@ -82,7 +46,7 @@ int InitConfig(const char* a_pFileName, std::map<std::string, std::string>& a_mD
 				std::string str(*it, strlen("set float "));
 				std::string strType(str.c_str(), str.find_first_of("="));
 				std::string strValue(str, str.find_first_of("=") + 1);
-				a_mDefaultValue[strType] = strValue;
+				m_DefaultValue[strType] = strValue;
 				continue;
 			}
 			else if (strncmp(it->c_str(), "set string ", strlen("set string ")) == 0)
@@ -90,10 +54,10 @@ int InitConfig(const char* a_pFileName, std::map<std::string, std::string>& a_mD
 				std::string str(*it, strlen("set string "));
 				std::string strType(str.c_str(), str.find_first_of("="));
 				std::string strValue(str, str.find_first_of("=") + 1);
-				a_mDefaultValue[strType] = strValue;
+				m_DefaultValue[strType] = strValue;
 				continue;
 			}
-			std::cout << "Unknown Type: " << *it << endl;
+			std::cout << "Unknown Type: " << *it << std::endl;
 			continue;
 		}
 		Func::SplitString(*it, "server ", vSplit);
@@ -107,11 +71,38 @@ int InitConfig(const char* a_pFileName, std::map<std::string, std::string>& a_mD
 			int nPort = atoi(strPort.c_str());
 			if (strIP.size() == 0 || strPort.size() == 0)
 			{
-				std::cout << "Server cfg Err : " << *it << endl;
+				std::cout << "Server cfg Err : " << *it << std::endl;
 				continue;
 			}
-			a_mServer[strServerName] = make_pair(strIP, nPort);
+			m_Server[strServerName] = make_pair(strIP, nPort);
 		}
 	}
-	return 0;
+	return true;
+}
+
+bool CConfig::GetValue(const std::string& a_strKey, std::string& a_strValue)
+{
+	if (m_DefaultValue.find(a_strKey) == m_DefaultValue.end())
+	{
+		SetErr(std::string("Cannot find key: ") + a_strKey);
+		return false;
+	}
+	a_strValue = m_DefaultValue[a_strKey];
+	return true;
+}
+
+bool CConfig::GetValue(const std::string& a_strKey, int &a_Value)
+{
+	if (m_DefaultValue.find(a_strKey) == m_DefaultValue.end())
+	{
+		SetErr(std::string("Cannot find key: ") + a_strKey);
+		return false;
+	}
+	a_Value = atoi(m_DefaultValue[a_strKey].c_str());
+	return true;
+}
+
+std::map<std::string, std::pair<std::string, int>>& CConfig::GetServer()
+{
+	return m_Server;
 }

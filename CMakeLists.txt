@@ -11,7 +11,8 @@ SET(LIBEVENT_LIB_PATH	"${CMAKE_CURRENT_SOURCE_DIR}/third_part/libevent-2.1.8-sta
 SET(LIBEVENT_LIB libevent libevent_core libevent_extras)
 
 SET(PROTOBUF_INCLUDE	"${CMAKE_CURRENT_SOURCE_DIR}/third_part/protobuf" 
-			"${CMAKE_CURRENT_SOURCE_DIR}/third_part/protobuf/google/protobuf")
+			"${CMAKE_CURRENT_SOURCE_DIR}/third_part/protobuf/google/protobuf"
+			"${CMAKE_CURRENT_SOURCE_DIR}/NetProtocol")
 SET(PROTOBUF_LIB_PATH	"${CMAKE_CURRENT_SOURCE_DIR}/third_part/protobuf/lib")
 SET(PROTOBUF_LIB libeay32 libprotobuf_d)
 
@@ -24,6 +25,7 @@ SET(GLOG_LIB_PATH	"${CMAKE_CURRENT_SOURCE_DIR}/third_part/glog-0.3.4/lib")
 SET(GLOG_LIB libglog_static)
 
 SET(BASE_PATH	"${CMAKE_CURRENT_SOURCE_DIR}/base")
+SET(BASE_FRAME	"${CMAKE_CURRENT_SOURCE_DIR}/frame")
 SET(BASE_PROTO_CLIENT "${CMAKE_CURRENT_SOURCE_DIR}/NetProtocol/client")
 SET(BASE_PROTO_SERVER "${CMAKE_CURRENT_SOURCE_DIR}/NetProtocol/server")
 
@@ -32,8 +34,8 @@ SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
 include(AddTarget)
 include(AutoFiles)
 
-#add_definitions(-D_UNICODE -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
-add_subdirectory(ClientServer)
-add_subdirectory(AuthServer)
+add_definitions(-D_UNICODE -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
+#add_subdirectory(ClientServer)
+#add_subdirectory(AuthServer)
 add_subdirectory(DatabaseServer)
 add_subdirectory(DustbinServer)
