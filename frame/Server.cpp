@@ -20,12 +20,12 @@ CServer::~CServer()
 
 }
 
-void CServer::OnReadCB(void* a_pArg)
+void CServer::OnReadCB(const std::string& a_str)
 {
 	LOG(INFO) << "Client. OnReadCB";
 
 	Certification certification;
-	if (certification.ParseFromString((char*)a_pArg))
+	if (certification.ParseFromString(a_str))
 	{
 		if (certification.type() == Certification::eServer)
 		{
@@ -52,25 +52,20 @@ void CServer::OnErrorCB(void* a_pArg)
 	LOG(INFO) << "Client. OnErrorCB";
 }
 
-void CServer::OnPackCB(const char *a_pSource, int& a_nLength, char **a_pDest)
+void CServer::OnPackCB(const std::string& a_strSrc, std::string& a_strDest)
 {
-	*a_pDest = (char*)a_pSource;
-	int nLength = a_nLength + sizeof(int);
-	*a_pDest = new char[nLength];		//int + buf
-	memset(*a_pDest, 0, nLength);
-	memcpy(*a_pDest, (void*)&nLength, sizeof(int));
-	memcpy(*a_pDest + sizeof(int), a_pSource, a_nLength);
-	a_nLength = nLength;
+	a_strDest = a_strSrc.size() + sizeof(int);
+	a_strDest += a_strSrc;
 }
 
-bool CServer::OnUnPackCB(const char *a_pSource, int a_nLength, char **a_pDest)
+bool CServer::OnUnPackCB(const std::string& a_strSrc, std::string& a_strDest)
 {
-	int nPackLength = *(int*)a_pSource;
-	if (nPackLength <= a_nLength)
+	std::string strPackLength;
+	strPackLength.assign(a_strSrc, 0, sizeof(int));
+	int nPackLength = atoi(strPackLength.c_str());
+	if (nPackLength <= static_cast<int>(a_strSrc.size()))
 	{
-		*a_pDest = new char[nPackLength - sizeof(int) + 1];
-		memset(*a_pDest, 0, nPackLength - sizeof(int) + 1);
-		memcpy(*a_pDest, a_pSource + sizeof(int), a_nLength - sizeof(int));
+		a_strDest.assign(a_strSrc, sizeof(int), a_strSrc.size() - sizeof(int));
 		return true;
 	}
 	return false;
@@ -90,7 +85,7 @@ bool CServer::OnConnect(CSession* a_pSession)
 		certification.set_code(strCode);
 		std::string str;
 		certification.SerializeToString(&str);
-		a_pSession->Send(str.c_str(), str.size());
+		a_pSession->Send(str);
 		return true;
 	}
 	SetErr(pConfig->GetErr());

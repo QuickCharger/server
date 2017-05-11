@@ -37,7 +37,8 @@ public:
 	void OnWriteCB(bufferevent *a_pBev, void *a_pArg);
 	void OnErrorCB(short a_nEvent);
 
-	void Send(const char* a_pBuffer, int a_nBufferSize);
+	//void Send(const char* a_pBuffer, int a_nBufferSize);
+	void Send(const std::string& a_strSrc);
 
 private:
 	void addConnectTimer();

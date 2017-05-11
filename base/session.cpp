@@ -119,6 +119,7 @@ void CSession::OnReadCB(bufferevent *a_pBev, void *a_pArg)
 	char *pBuf = new char[MAXREADBUFFER];
 	memset(pBuf, 0, MAXREADBUFFER);
 	//pBuf可能溢出，unfinish
+	//while中append可能溢出
 	int nReadSize;
 	while (nReadSize = bufferevent_read(a_pBev, pBuf, MAXREADBUFFER), nReadSize > 0)
 	{
@@ -126,21 +127,13 @@ void CSession::OnReadCB(bufferevent *a_pBev, void *a_pArg)
 		m_pReadBuffer->Append(pBuf, nReadSize);
 		memset(pBuf, 0, MAXREADBUFFER);
 	}
-	//if (m_funcUnPackCB == nullptr || m_funcReadCB == nullptr)
-	//{
-	//	if (m_SessionSelector != nullptr)
-	//	{
-	//		m_SessionSelector->ParseData(m_pReadBuffer->GetBuffer(), m_pReadBuffer->GetCurrentSize());
-	//	}
-	//	return;
-	//}
-	//else 
+#undef MAXREADBUFFER
 
-	char *pDecodeBuf = 0;
-	if (m_Server->OnUnPackCB(m_pReadBuffer->GetBuffer(), m_pReadBuffer->GetCurrentSize(), &pDecodeBuf))
+	std::string strDest;
+	if (m_Server->OnUnPackCB(m_pReadBuffer->GetBuffer(), strDest))
 	{
 		m_pReadBuffer->ClearBuffer();
-		m_Server->OnReadCB((void*)pDecodeBuf);
+		m_Server->OnReadCB(strDest);
 		//m_Server->OnReadCB(pDecodeBuf);
 	}
 	else
@@ -148,8 +141,6 @@ void CSession::OnReadCB(bufferevent *a_pBev, void *a_pArg)
 		// TODO
 	}
 	delete[]pBuf;
-	delete[]pDecodeBuf;
-#undef MAXREADBUFFER
 }
 
 void CSession::OnWriteCB(bufferevent *a_pBev, void *a_pArg)
@@ -201,11 +192,11 @@ void CSession::OnErrorCB(short a_nEvent)
 	}
 }
 
-void CSession::Send(const char* a_pBuffer, int a_nSize)
+void CSession::Send(const std::string& a_strSrc)
 {
-	char *pBuf = nullptr;
-	m_Server->OnPackCB(a_pBuffer, a_nSize, &pBuf);
-	m_pSendBuffer->Append(pBuf, a_nSize);
+	std::string strDest;
+	m_Server->OnPackCB(a_strSrc, strDest);
+	m_pSendBuffer->Append(strDest.c_str(), strDest.size());
 	if (bufferevent_write(m_pBufferEvent, m_pSendBuffer->GetBuffer(), m_pSendBuffer->GetCurrentSize()) == 0)
 	{
 		m_Server->OnWriteCB((void*)m_pSendBuffer->GetBuffer());
@@ -213,11 +204,7 @@ void CSession::Send(const char* a_pBuffer, int a_nSize)
 	}
 	else
 	{
-		m_Server->OnWriteCB((void*)1);
-	}
-	if (pBuf != nullptr)
-	{
-		delete[]pBuf;
+		m_Server->OnWriteCB(nullptr);
 	}
 }
 

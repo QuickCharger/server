@@ -12,12 +12,13 @@ public:
 	CServer(event_base *a_pEventBase, const std::string& a_strName, const std::string& a_strIP, int a_nPort, bool a_bAutoConnect = false);
 	~CServer();
 
-	virtual void OnReadCB(void* a_pArg);	//unfinish,a_pArg可能会有\0，导致转成string被截断。
+	virtual void OnReadCB(const std::string& a_str);	//unfinish,a_pArg可能会有\0，导致转成string被截断。
 	virtual void OnWriteCB(void* a_pArg);
 	virtual void OnErrorCB(void* a_pArg);
 
-	virtual void OnPackCB(const char *a_pSource, int& a_nLength, char **a_pDest);
-	virtual bool OnUnPackCB(const char *a_pSource, int a_nLength, char **a_pDest);
+	//virtual void OnPackCB(const char *a_pSource, int& a_nLength, char **a_pDest);
+	virtual void OnPackCB(const std::string& a_strSrc, std::string& a_strDest);
+	virtual bool OnUnPackCB(const std::string& a_strSrc, std::string& a_strDest);
 
 	/*
 	* 成功连接其他服务器之后的回调
