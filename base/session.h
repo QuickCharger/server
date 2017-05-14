@@ -6,6 +6,7 @@
 #include <event2/bufferevent.h>
 #include <event2/event.h>
 #include "macro.h"
+#include "message_lite.h"
 
 class IServer;
 class IServerManager;
@@ -38,7 +39,8 @@ public:
 	void OnErrorCB(short a_nEvent);
 
 	//void Send(const char* a_pBuffer, int a_nBufferSize);
-	void Send(const std::string& a_strSrc);
+	//void Send(const std::string& a_strSrc);
+	void Send(int a_nMsgCode, const google::protobuf::MessageLite& a_Msg);
 
 private:
 	void addConnectTimer();
@@ -73,7 +75,7 @@ private:
 	DEFINE_TYPE_REFER(std::string,	m_strServerIP,		"", GetServerIP, SetServerIP);
 
 	DEFINE_TYPE_BASE(IServer*, m_Server, nullptr, GetServer, SetServer);
-	DEFINE_TYPE_BASE(IServerManager*, m_ServerManager, nullptr, GetServerManager, SetServerManager);
+	//DEFINE_TYPE_BASE(IServerManager*, m_ServerManager, nullptr, GetServerManager, SetServerManager);
 	//DEFINE_TYPE_BASE(ISessionSelector*, m_SessionSelector, nullptr, GetSessionSelector, SetSessionSelector);
 };
 #endif

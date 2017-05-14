@@ -5,6 +5,7 @@
 #include "buffer.h"
 #include "log.h"
 #include "IServer.h"
+#include "message_lite.h"
 //#include "ISessionSelector.h"
 
 CSession::CSession(IServer *a_pServer, event_base* a_pEventBase, SOCKET a_Socket)
@@ -130,10 +131,11 @@ void CSession::OnReadCB(bufferevent *a_pBev, void *a_pArg)
 #undef MAXREADBUFFER
 
 	std::string strDest;
-	if (m_Server->OnUnPackCB(m_pReadBuffer->GetBuffer(), strDest))
+	int nCode = 0;
+	if (m_Server->OnUnPackCB(m_pReadBuffer->GetBuffer(), nCode, strDest))
 	{
 		m_pReadBuffer->ClearBuffer();
-		m_Server->OnReadCB(strDest);
+		m_Server->OnReadCB(nCode, strDest);
 		//m_Server->OnReadCB(pDecodeBuf);
 	}
 	else
@@ -192,10 +194,26 @@ void CSession::OnErrorCB(short a_nEvent)
 	}
 }
 
-void CSession::Send(const std::string& a_strSrc)
+//void CSession::Send(const std::string& a_strSrc)
+//{
+//	std::string strDest;
+//	m_Server->OnPackCB(a_strSrc, strDest);
+//	m_pSendBuffer->Append(strDest.c_str(), strDest.size());
+//	if (bufferevent_write(m_pBufferEvent, m_pSendBuffer->GetBuffer(), m_pSendBuffer->GetCurrentSize()) == 0)
+//	{
+//		m_Server->OnWriteCB((void*)m_pSendBuffer->GetBuffer());
+//		m_pSendBuffer->ClearBuffer();
+//	}
+//	else
+//	{
+//		m_Server->OnWriteCB(nullptr);
+//	}
+//}
+
+void CSession::Send(int a_nMsgCode, const google::protobuf::MessageLite& a_Msg)
 {
 	std::string strDest;
-	m_Server->OnPackCB(a_strSrc, strDest);
+	m_Server->OnPackCB(a_nMsgCode, a_Msg.SerializeAsString(), strDest);
 	m_pSendBuffer->Append(strDest.c_str(), strDest.size());
 	if (bufferevent_write(m_pBufferEvent, m_pSendBuffer->GetBuffer(), m_pSendBuffer->GetCurrentSize()) == 0)
 	{
