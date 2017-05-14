@@ -10,3 +10,8 @@ CDustbinServer::~CDustbinServer()
 {
 
 }
+
+void CDustbinServer::OnMessageCB(int a_nCode, void *a_Arg)
+{
+	LOG(INFO) << "CDustbinServer::OnMessageCB";
+}

@@ -110,7 +110,13 @@ public:
 		}
 
 		CServer *pNewServer = new CServer(m_pEventBase, socket);
+		pNewServer->SetMessageCB([this](int a_nCode, void *a_Arg){ this->OnMessageCB(a_nCode, a_Arg); });
 		//pNewServer->SetSocket(socket);
+	}
+
+	virtual void OnMessageCB(int a_nCode, void*)
+	{
+		LOG(INFO) << "Template OnMessageCB";
 	}
 
 	void LinkToServer(evutil_socket_t a_Socket, short a_nEvent, void *a_pArg)
@@ -120,6 +126,7 @@ public:
 		for (auto it = serverCfg.begin(); it != serverCfg.end(); ++it)
 		{
 			CServer *pServer = new CServer(m_pEventBase, it->first, it->second.first, it->second.second, true);
+			pServer->SetMessageCB([this](int a_nCode, void *a_Arg){ this->OnMessageCB(a_nCode, a_Arg); });
 		}
 	}
 

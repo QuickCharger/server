@@ -6,6 +6,7 @@
 #include <event2/bufferevent.h>
 #include <event2/event.h>
 #include "macro.h"
+#include "message.h"
 #include "message_lite.h"
 
 class IServer;
@@ -40,7 +41,8 @@ public:
 
 	//void Send(const char* a_pBuffer, int a_nBufferSize);
 	//void Send(const std::string& a_strSrc);
-	void Send(int a_nMsgCode, const google::protobuf::MessageLite& a_Msg);
+	//void Send(int a_nMsgCode, const google::protobuf::MessageLite& a_Msg);
+	void Send(int a_nMsgCode, ::google::protobuf::Message &a_Msg);
 
 private:
 	void addConnectTimer();
