@@ -174,11 +174,11 @@ void CSession::OnErrorCB(short a_nEvent)
 	}
 	if (a_nEvent & BEV_EVENT_TIMEOUT)
 	{
-		LOG(WARNING) << "socket Time out";
+		LOG(WARNING) << "BEV_EVENT_TIMEOUT";
 	}
 	else if (a_nEvent & BEV_EVENT_EOF)
 	{
-		LOG(WARNING) << "connection closed";
+		LOG(WARNING) << "BEV_EVENT_EOF";
 		CloseSocket();
 		if (m_bAutoConnect)
 		{
@@ -187,7 +187,12 @@ void CSession::OnErrorCB(short a_nEvent)
 	}
 	else if (a_nEvent & BEV_EVENT_ERROR)
 	{
-		LOG(WARNING) << "Unknown error";
+		LOG(WARNING) << "BEV_EVENT_ERROR";
+		CloseSocket();
+		if (m_bAutoConnect)
+		{
+			addConnectTimer();
+		}
 	}
 	else
 	{

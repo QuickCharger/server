@@ -10,3 +10,8 @@ CDatabaseServer::~CDatabaseServer()
 {
 
 }
+
+void CDatabaseServer::OnMessageCB(int a_nCode, void*)
+{
+	LOG(INFO) << "Template OnMessageCB";
+}

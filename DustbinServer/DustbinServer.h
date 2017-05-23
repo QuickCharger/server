@@ -10,7 +10,7 @@ public:
 	CDustbinServer(int argc, char* argv[]);
 	~CDustbinServer();
 
-	void OnMessageCB(int a_nCode, void *a_Arg);
+	virtual void OnMessageCB(int a_nCode, void *a_Arg);
 };
 
 #endif

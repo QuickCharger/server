@@ -8,6 +8,7 @@ class CDatabaseServer : public CServerImpl<CDatabaseServer>
 public:
 	CDatabaseServer(int argc, char* argv[]);
 	~CDatabaseServer();
+	virtual void OnMessageCB(int a_nCode, void*);
 };
 
 #endif
