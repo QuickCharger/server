@@ -4,14 +4,16 @@
 #include "session.h"
 #include "common/test.pb.h"
 #include "MessageCode.h"
-CServer::CServer(event_base* a_pEventBase, SOCKET a_Socket)
+CServer::CServer(IServerImpl *a_pServerImpl, event_base* a_pEventBase, SOCKET a_Socket)
 	: IServer(/*a_pEventBase, new CSession(a_pEventBase)*/)
+	, m_ServerImpl(a_pServerImpl)
 {
 	m_pSession = new CSession(this, a_pEventBase, a_Socket);
 }
 
-CServer::CServer(event_base *a_pEventBase, const std::string& a_strName, const std::string& a_strIP, int a_nPort, bool a_bAutoConnect)
+CServer::CServer(IServerImpl *a_pServerImpl, event_base *a_pEventBase, const std::string& a_strName, const std::string& a_strIP, int a_nPort, bool a_bAutoConnect)
 	: IServer()
+	, m_ServerImpl(a_pServerImpl)
 {
 	m_pSession = new CSession(this, a_pEventBase, a_strName, a_strIP, a_nPort, a_bAutoConnect);
 }
@@ -69,7 +71,8 @@ void CServer::OnReadCB(int a_nCode, void* a_pArg)
 		{
 			LOG(WARNING) << "Parse err. code: " << a_nCode;
 		}
-		m_funcMessageCB(a_nCode, a_pArg);
+		//m_funcMessageCB(a_nCode, a_pArg);
+		m_ServerImpl->OnMessageCB(a_nCode, (char*)a_pArg);
 		return;
 	}
 

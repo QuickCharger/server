@@ -11,8 +11,10 @@
 #include "Server.h"
 #include "session.h"
 
+#include "IServerImpl.h"
+
 template<typename T>
-class CServerImpl : public CErrRecord<T>
+class CServerImpl : public IServerImpl, public CErrRecord<T>
 {
 public:
 	CServerImpl(char *argv[])
@@ -36,7 +38,7 @@ public:
 
 		std::map<std::string, std::pair<std::string, int>> &mServer = m_pConfig->GetServer();
 
-		evutil_socket_t m_Socket = socket(AF_INET, SOCK_STREAM, 0);
+		m_Socket = socket(AF_INET, SOCK_STREAM, 0);
 		evutil_make_socket_nonblocking(m_Socket);
 #ifndef WIN32
 		evutil_make_listen_socket_reuseable(sockSrv);	//设定接口可重用,Win上不可用
@@ -109,14 +111,14 @@ public:
 			return;
 		}
 
-		CServer *pNewServer = new CServer(m_pEventBase, socket);
-		pNewServer->SetMessageCB([this](int a_nCode, void *a_Arg){ 
-			this->OnMessageCB(a_nCode, a_Arg); 
-		});
+		CServer *pNewServer = new CServer(this, m_pEventBase, socket);
+		//pNewServer->SetMessageCB([this](int a_nCode, void *a_Arg){ 
+		//	this->OnMessageCB(a_nCode, a_Arg);
+		//});
 		//pNewServer->SetSocket(socket);
 	}
 
-	virtual void OnMessageCB(int, void*) = 0;
+	//virtual void OnMessageCB(int, void*) = 0;
 
 	//void OnMessageCB(int a_nCode, void*)
 	//{
@@ -129,8 +131,8 @@ public:
 		std::map<std::string, std::pair<std::string, int>> &serverCfg = m_pConfig->GetServer();
 		for (auto it = serverCfg.begin(); it != serverCfg.end(); ++it)
 		{
-			CServer *pServer = new CServer(m_pEventBase, it->first, it->second.first, it->second.second, true);
-			pServer->SetMessageCB([this](int a_nCode, void *a_Arg){ this->OnMessageCB(a_nCode, a_Arg); });
+			CServer *pServer = new CServer(this, m_pEventBase, it->first, it->second.first, it->second.second, true);
+			//pServer->SetMessageCB([this](int a_nCode, void *a_Arg){ this->OnMessageCB(a_nCode, a_Arg); });
 		}
 	}
 

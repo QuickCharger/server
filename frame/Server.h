@@ -7,11 +7,13 @@
 #include "IServer.h"
 #include "ErrRecord.h"
 
+#include "IServerImpl.h"
+
 class CServer : public IServer, public CErrRecord<CServer>
 {
 public:
-	CServer(event_base* a_pEventBase, SOCKET a_Socket = 0);
-	CServer(event_base *a_pEventBase, const std::string& a_strName, const std::string& a_strIP, int a_nPort, bool a_bAutoConnect = false);
+	CServer(IServerImpl *a_pServerImpl, event_base* a_pEventBase, SOCKET a_Socket = 0);
+	CServer(IServerImpl *a_pServerImpl, event_base *a_pEventBase, const std::string& a_strName, const std::string& a_strIP, int a_nPort, bool a_bAutoConnect = false);
 	~CServer();
 
 	//virtual void OnReadCB(const std::string& a_str);	//unfinish,a_pArg可能会有\0，导致转成string被截断。
@@ -32,8 +34,8 @@ private:
 	DEFINE_TYPE_REFER(std::string, m_strServerName, "", GetServerName, SetServerName);
 	DEFINE_TYPE_REFER(std::string, m_strServerIP, "", GetServerIP, SetServerIP);
 
-
-	DEFINE_TYPE_BASE(std::function< void(int, void*)>, m_funcMessageCB, nullptr, GetMessageCB, SetMessageCB);
+	IServerImpl *m_ServerImpl = nullptr;
+	//DEFINE_TYPE_BASE(std::function< void(int, void*)>, m_funcMessageCB, nullptr, GetMessageCB, SetMessageCB);
 };
 
 #endif

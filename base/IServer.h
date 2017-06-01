@@ -11,10 +11,10 @@ class IServer
 {
 public:
 	//IServer(event_base* a_pEventBase, CSession *a_pSession);
-	IServer();
-	virtual ~IServer();
+	IServer() {};
+	virtual ~IServer() {};
 
-	void SetCallBack();
+	void SetCallBack() {};
 
 	//virtual void OnReadCB(const std::string& a_str)  = 0;
 	virtual void OnReadCB(int a_nCode, void *a_Arg) = 0;
