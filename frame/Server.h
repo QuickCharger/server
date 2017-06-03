@@ -14,7 +14,7 @@ class CServer : public IServer, public CErrRecord<CServer>
 public:
 	CServer(IServerImpl *a_pServerImpl, event_base* a_pEventBase, SOCKET a_Socket = 0);
 	CServer(IServerImpl *a_pServerImpl, event_base *a_pEventBase, const std::string& a_strName, const std::string& a_strIP, int a_nPort, bool a_bAutoConnect = false);
-	~CServer();
+	virtual ~CServer();
 
 	//virtual void OnReadCB(const std::string& a_str);	//unfinish,a_pArg可能会有\0，导致转成string被截断。
 	virtual void OnReadCB(int a_nCode, void* a_pArg);

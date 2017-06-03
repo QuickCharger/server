@@ -143,6 +143,7 @@
 int main(int argc, char *argv[])
 {
 	CDatabaseServer server(argc, argv);
+	server.Run();
 
 	return 0;
 }

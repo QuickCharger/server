@@ -80,10 +80,12 @@ public:
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
 		event_add(evListen2, &tv);
-
+	}
+	void Run()
+	{
 		event_base_dispatch(m_pEventBase);
 	};
-	~CServerImpl()
+	virtual ~CServerImpl()
 	{
 		LOG(INFO) << "PROGRAM FINISH\n" << "press any key to exit";
 		getchar();
@@ -135,6 +137,8 @@ public:
 			//pServer->SetMessageCB([this](int a_nCode, void *a_Arg){ this->OnMessageCB(a_nCode, a_Arg); });
 		}
 	}
+
+	virtual void OnMessageCB(int, const char *) { LOG(INFO) << "CServerImpl::OnMessageCB"; };
 
 private:
 	CConfig *m_pConfig;

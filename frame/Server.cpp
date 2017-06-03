@@ -20,7 +20,7 @@ CServer::CServer(IServerImpl *a_pServerImpl, event_base *a_pEventBase, const std
 
 CServer::~CServer()
 {
-
+	LOG(INFO) << "CServer::~CServer";
 }
 
 //void CServer::OnReadCB(const std::string& a_str)

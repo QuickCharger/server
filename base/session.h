@@ -28,7 +28,7 @@ class CSession
 public:
 	CSession(IServer *a_pServer, event_base* a_pEventBase, SOCKET a_Socket);
 	CSession(IServer *a_pServer, event_base *a_pEventBase, const std::string& a_strName, const std::string& a_strIP, int a_nPort, bool a_bAutoConnect = false);
-	~CSession();
+	virtual ~CSession();
 
 	//void Connect();
 	void CloseSocket();

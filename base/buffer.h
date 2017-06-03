@@ -14,7 +14,7 @@ public:
 	};
 public:
 	CBuffer(int a_nBufferSize);
-	~CBuffer();
+	virtual ~CBuffer();
 	int Append(const char* a_pData, int a_uSize);
 	//int CheckParse();
 	void ClearBuffer();

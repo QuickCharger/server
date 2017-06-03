@@ -1,5 +1,5 @@
-#ifndef _BASE_H_
-#define _BASE_H_
+#ifndef _BASE_BASE_H_
+#define _BASE_BASE_H_
 
 #include <list>
 #include <map>

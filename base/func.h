@@ -1,5 +1,5 @@
-#ifndef _FUNC_H_
-#define _FUNC_H_
+#ifndef _BASE_FUNC_H_
+#define _BASE_FUNC_H_
 
 #include <string>
 #include <vector>

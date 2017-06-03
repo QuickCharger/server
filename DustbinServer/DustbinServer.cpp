@@ -8,10 +8,10 @@ CDustbinServer::CDustbinServer(int argc, char *argv[])
 
 CDustbinServer::~CDustbinServer()
 {
-
+	LOG(INFO) << "CDustbinServer::~CDustbinServer";
 }
 
-//void CDustbinServer::OnMessageCB(int a_nCode, void *a_Arg)
-//{
-//	LOG(INFO) << "CDustbinServer::OnMessageCB";
-//}
+void CDustbinServer::OnMessageCB(int a_nCode, const char *a_Arg)
+{
+	LOG(INFO) << "CDustbinServer::OnMessageCB";
+}

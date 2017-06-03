@@ -10,9 +10,7 @@ public:
 	~CDatabaseServer();
 	//virtual void OnMessageCB(int a_nCode, void*);
 
-	virtual void OnMessageCB(int, /*const*/ char *) {
-		LOG(INFO) << "DatabaseServer::OnMessageCB";
-	};
+	virtual void OnMessageCB(int, const char *);
 };
 
 #endif

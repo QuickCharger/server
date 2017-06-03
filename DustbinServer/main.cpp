@@ -220,5 +220,7 @@ int main(int argc, char *argv[])
 {
 	CDustbinServer server(argc, argv);
 
+	server.Run();
+
 	return 0;
 }

@@ -8,10 +8,10 @@ CDatabaseServer::CDatabaseServer(int argc, char *argv[])
 
 CDatabaseServer::~CDatabaseServer()
 {
-
+	LOG(INFO) << "CDatabaseServer::~CDatabaseServer";
 }
 
-//void CDatabaseServer::OnMessageCB(int a_nCode, void*)
-//{
-//	LOG(INFO) << "Template OnMessageCB";
-//}
+void CDatabaseServer::OnMessageCB(int, const char *)
+{
+	LOG(INFO) << "DatabaseServer::OnMessageCB";
+};

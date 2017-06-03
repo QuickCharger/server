@@ -7,9 +7,9 @@ class IServerImpl
 {
 public:
 	IServerImpl() { LOG(INFO) << "IServerImpl"; };
-	~IServerImpl() { LOG(INFO) << "~IServerImpl"; };
+	virtual ~IServerImpl() { LOG(INFO) << "~IServerImpl"; };
 public:
-	virtual void OnMessageCB(int, char *) = 0;
+	virtual void OnMessageCB(int, const char *) = 0;
 };
 
 #endif
