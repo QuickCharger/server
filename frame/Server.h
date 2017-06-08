@@ -17,12 +17,12 @@ public:
 	virtual ~CServer();
 
 	//virtual void OnReadCB(const std::string& a_str);	//unfinish,a_pArg可能会有\0，导致转成string被截断。
-	virtual void OnReadCB(int a_nCode, void* a_pArg);
+	virtual void OnReadCB(CSession* a_pSession, int a_nCode, void* a_pArg);
 	virtual void OnWriteCB(void* a_pArg);
 	virtual void OnErrorCB(void* a_pArg);
 
 	virtual void OnPackCB(const char *a_pSource, int a_nCode, int& a_nLength, char **a_pDest);
-	virtual bool OnUnPackCB(const char *a_pSource, int a_nLength, int &a_nCode, char **a_pDest);
+	virtual int OnUnPackCB(const char *a_pSource, int a_nLength, int &a_nCode, char **a_pDest);
 	/*
 	* 成功连接其他服务器之后的回调
 	*/

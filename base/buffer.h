@@ -17,6 +17,7 @@ public:
 	virtual ~CBuffer();
 	int Append(const char* a_pData, int a_uSize);
 	//int CheckParse();
+	void DeleteBuffer(int a_nSize);
 	void ClearBuffer();
 
 public:

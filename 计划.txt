@@ -29,6 +29,10 @@
 	添加MessageDispatch类
 2017/06/03
 	添加MessageDispatch类
+2017/06/08
+	传送消息修改为可以只传消息号，对应的接收也要修改
+	添加timer
+	session放在server中，OnReadCB不需要session参数
 
 
 

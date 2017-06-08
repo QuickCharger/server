@@ -10,9 +10,12 @@ SET(LIBEVENT_INCLUDE	"${CMAKE_CURRENT_SOURCE_DIR}/third_part/libevent-2.1.8-stab
 SET(LIBEVENT_LIB_PATH	"${CMAKE_CURRENT_SOURCE_DIR}/third_part/libevent-2.1.8-stable/lib")
 SET(LIBEVENT_LIB libevent libevent_core libevent_extras)
 
-SET(PROTOBUF_INCLUDE	"${CMAKE_CURRENT_SOURCE_DIR}/third_part/protobuf" 
+SET(PROTOBUF_INCLUDE	"${CMAKE_CURRENT_SOURCE_DIR}"
+			"${CMAKE_CURRENT_SOURCE_DIR}/third_part/protobuf" 
 			"${CMAKE_CURRENT_SOURCE_DIR}/third_part/protobuf/google/protobuf"
-			"${CMAKE_CURRENT_SOURCE_DIR}/NetProtocol")
+#			"${CMAKE_CURRENT_SOURCE_DIR}/NetProtocol"
+)
+
 SET(PROTOBUF_LIB_PATH	"${CMAKE_CURRENT_SOURCE_DIR}/third_part/protobuf/lib")
 SET(PROTOBUF_LIB libeay32 libprotobuf_d)
 

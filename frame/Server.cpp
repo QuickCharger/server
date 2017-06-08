@@ -2,8 +2,9 @@
 #include "config.h"
 #include "log.h"
 #include "session.h"
-#include "common/test.pb.h"
-#include "MessageCode.h"
+#include "NetProtocol/common/test.pb.h"
+#include "NetProtocol/server/messageCode.h"
+
 CServer::CServer(IServerImpl *a_pServerImpl, event_base* a_pEventBase, SOCKET a_Socket)
 	: IServer(/*a_pEventBase, new CSession(a_pEventBase)*/)
 	, m_ServerImpl(a_pServerImpl)
@@ -45,11 +46,11 @@ CServer::~CServer()
 //	}
 //}
 
-void CServer::OnReadCB(int a_nCode, void* a_pArg)
+void CServer::OnReadCB(CSession* a_pSession, int a_nCode, void* a_pArg)
 {
-	LOG(INFO) << "Client. OnReadCB";
+	//LOG(INFO) << "Client. OnReadCB";
 
-	if (a_nCode == kCertification)
+	if (a_nCode == ServerMessageCode::eTest)
 	{
 		Certification certification;
 		if (certification.ParseFromString((char*)a_pArg))
@@ -71,9 +72,10 @@ void CServer::OnReadCB(int a_nCode, void* a_pArg)
 		{
 			LOG(WARNING) << "Parse err. code: " << a_nCode;
 		}
-		//m_funcMessageCB(a_nCode, a_pArg);
-		m_ServerImpl->OnMessageCB(a_nCode, (char*)a_pArg);
-		return;
+	}
+	else
+	{
+		m_ServerImpl->OnMessageCB(a_pSession, a_nCode, (char*)a_pArg);
 	}
 
 }
@@ -100,18 +102,22 @@ void CServer::OnPackCB(const char *a_pSource, int a_nCode, int& a_nLength, char 
 	a_nLength = nLength;
 }
 
-bool CServer::OnUnPackCB(const char *a_pSource, int a_nLength, int &a_nCode, char **a_pDest)
+int CServer::OnUnPackCB(const char *a_pSource, int a_nLength, int &a_nCode, char **a_pDest)
 {
+	if (a_nLength == 0)
+	{
+		return 0;
+	}
 	int nPackLength = *(int*)a_pSource;
 	if (nPackLength <= a_nLength)
 	{
 		a_nCode = *(int*)(a_pSource + sizeof(int));
 		*a_pDest = new char[nPackLength - sizeof(int) - sizeof(a_nCode) + 1];	//½áÎ²²¹0
 		memset(*a_pDest, 0, nPackLength - sizeof(int) - sizeof(a_nCode) + 1);
-		memcpy(*a_pDest, a_pSource + sizeof(int) + sizeof(a_nCode), a_nLength - sizeof(int) - sizeof(a_nCode));
-		return true;
+		memcpy(*a_pDest, a_pSource + sizeof(int) + sizeof(a_nCode), nPackLength - sizeof(int) - sizeof(a_nCode));
+		return nPackLength;
 	}
-	return false;
+	return 0;
 }
 
 //void CServer::OnPackCB(int a_nCode, const std::string& a_strSrc, std::string& a_strDest)
@@ -158,7 +164,9 @@ bool CServer::OnConnect(CSession* a_pSession)
 		msgCertification.set_type(Certification_TYPE_eServer);
 		msgCertification.set_name(strServerName);
 		msgCertification.set_code(strCode);
-		a_pSession->Send(kCertification, msgCertification);
+		a_pSession->Send(ServerMessageCode::eTest, msgCertification);
+
+		a_pSession->Send(ServerMessageCode::eTest2, msgCertification);
 		return true;
 	}
 	SetErr(pConfig->GetErr());

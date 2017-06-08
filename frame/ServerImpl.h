@@ -12,9 +12,10 @@
 #include "session.h"
 
 #include "IServerImpl.h"
+#include "MessageDispatch.h"
 
 template<typename T>
-class CServerImpl : public IServerImpl, public CErrRecord<T>
+class CServerImpl : public IServerImpl, public CMessageDispatch, public CErrRecord<T>
 {
 public:
 	CServerImpl(char *argv[])
@@ -138,7 +139,13 @@ public:
 		}
 	}
 
-	virtual void OnMessageCB(int, const char *) { LOG(INFO) << "CServerImpl::OnMessageCB"; };
+	virtual void OnMessageCB(CSession* a_pSession, int a_nCode, const char *a_pCh)
+	{
+		if (!DoMessageCB(a_pSession, a_nCode, a_pCh))
+		{
+			LOG(WARNING) << "code: " << a_nCode << " dispatch failed !!!";
+		}
+	};
 
 private:
 	CConfig *m_pConfig;

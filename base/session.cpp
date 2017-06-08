@@ -132,15 +132,12 @@ void CSession::OnReadCB(bufferevent *a_pBev, void *a_pArg)
 
 	char *pDest;
 	int nCode = 0;
-	if (m_Server->OnUnPackCB(m_pReadBuffer->GetBuffer(), m_pReadBuffer->GetCurrentSize(), nCode, &pDest))
+	//大于0表示成功收到一次可解析的数据，
+	while ((nReadSize = m_Server->OnUnPackCB(m_pReadBuffer->GetBuffer(), m_pReadBuffer->GetCurrentSize(), nCode, &pDest)) > 0)
 	{
-		m_pReadBuffer->ClearBuffer();
-		m_Server->OnReadCB(nCode, pDest);
+		m_pReadBuffer->DeleteBuffer(nReadSize);
+		m_Server->OnReadCB(this, nCode, pDest);
 		//m_Server->OnReadCB(pDecodeBuf);
-	}
-	else
-	{
-		// TODO
 	}
 	delete []pBuf;
 	delete []pDest;

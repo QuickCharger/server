@@ -58,6 +58,18 @@ int CBuffer::Append(const char* a_pData, int a_uSize)
 //	}
 //}
 
+void CBuffer::DeleteBuffer(int a_nSize)
+{
+	//m_pBuffer
+	int nLastSize = m_nCurrentSize - a_nSize;
+	m_nCurrentSize -= a_nSize;
+	char *pBuffer = new char[nLastSize];
+	memset(pBuffer, 0, sizeof(nLastSize));
+	memcpy(pBuffer, m_pBuffer + a_nSize, nLastSize);
+	memset(m_pBuffer, 0, m_nBufferSize);
+	memcpy(m_pBuffer, pBuffer, nLastSize);
+}
+
 void CBuffer::ClearBuffer()
 {
 	memset(m_pBuffer, 0, m_nCurrentSize);

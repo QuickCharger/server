@@ -9,7 +9,7 @@ public:
 	IServerImpl() { LOG(INFO) << "IServerImpl"; };
 	virtual ~IServerImpl() { LOG(INFO) << "~IServerImpl"; };
 public:
-	virtual void OnMessageCB(int, const char *) = 0;
+	virtual void OnMessageCB(CSession* a_pSession, int, const char *) = 0;
 };
 
 #endif

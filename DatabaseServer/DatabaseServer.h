@@ -10,7 +10,9 @@ public:
 	~CDatabaseServer();
 	//virtual void OnMessageCB(int a_nCode, void*);
 
-	virtual void OnMessageCB(int, const char *);
+	//virtual void OnMessageCB(CSession* a_pSession, int, const char *);
+
+	void OnMessageCB1(CSession* a_pSession, const char * a_pCh);
 };
 
 #endif
