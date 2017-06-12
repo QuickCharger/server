@@ -17,7 +17,8 @@ public:
 	void SetCallBack() {};
 
 	//virtual void OnReadCB(const std::string& a_str)  = 0;
-	virtual void OnReadCB(CSession* a_pSession, int a_nCode, void *a_Arg) = 0;
+	//virtual void OnReadCB(CSession* a_pSession, int a_nCode, void *a_Arg) = 0;
+	virtual void OnReadCB(int a_nCode, void *a_Arg) = 0;
 	virtual void OnWriteCB(void* a_pArg) = 0;
 	virtual void OnErrorCB(void* a_pArg) = 0;
 
@@ -33,8 +34,7 @@ public:
 
 	virtual bool OnConnect(CSession* a_pSession) = 0;
 
-	CSession *m_pSession = nullptr;
-
+	//CSession *m_pSession = nullptr;
 
 	//event_base* m_pEventBase = nullptr;
 

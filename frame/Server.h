@@ -17,7 +17,8 @@ public:
 	virtual ~CServer();
 
 	//virtual void OnReadCB(const std::string& a_str);	//unfinish,a_pArg可能会有\0，导致转成string被截断。
-	virtual void OnReadCB(CSession* a_pSession, int a_nCode, void* a_pArg);
+	//virtual void OnReadCB(CSession* a_pSession, int a_nCode, void* a_pArg);
+	virtual void OnReadCB(int a_nCode, void* a_pArg);
 	virtual void OnWriteCB(void* a_pArg);
 	virtual void OnErrorCB(void* a_pArg);
 
@@ -29,7 +30,7 @@ public:
 	virtual bool OnConnect(CSession* a_pSession);
 
 private:
-	//DEFINE_TYPE_BASE(CSession*, m_pSession, nullptr, GetSession, SetSession);
+	DEFINE_TYPE_BASE(CSession*, m_pSession, nullptr, GetSession, SetSession);
 	DEFINE_TYPE_BASE(int, m_nPort, 1024, GetPort, SetPort);
 	DEFINE_TYPE_REFER(std::string, m_strServerName, "", GetServerName, SetServerName);
 	DEFINE_TYPE_REFER(std::string, m_strServerIP, "", GetServerIP, SetServerIP);

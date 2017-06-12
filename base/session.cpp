@@ -136,7 +136,7 @@ void CSession::OnReadCB(bufferevent *a_pBev, void *a_pArg)
 	while ((nReadSize = m_Server->OnUnPackCB(m_pReadBuffer->GetBuffer(), m_pReadBuffer->GetCurrentSize(), nCode, &pDest)) > 0)
 	{
 		m_pReadBuffer->DeleteBuffer(nReadSize);
-		m_Server->OnReadCB(this, nCode, pDest);
+		m_Server->OnReadCB(nCode, pDest);
 		//m_Server->OnReadCB(pDecodeBuf);
 	}
 	delete []pBuf;

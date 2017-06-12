@@ -46,7 +46,7 @@ CServer::~CServer()
 //	}
 //}
 
-void CServer::OnReadCB(CSession* a_pSession, int a_nCode, void* a_pArg)
+void CServer::OnReadCB(int a_nCode, void* a_pArg)
 {
 	//LOG(INFO) << "Client. OnReadCB";
 
@@ -75,7 +75,7 @@ void CServer::OnReadCB(CSession* a_pSession, int a_nCode, void* a_pArg)
 	}
 	else
 	{
-		m_ServerImpl->OnMessageCB(a_pSession, a_nCode, (char*)a_pArg);
+		m_ServerImpl->OnMessageCB(m_pSession, a_nCode, (char*)a_pArg);
 	}
 
 }

@@ -16,3 +16,7 @@ message Certification
 	required string name = 2;
 	required string code = 3;
 }
+
+message MessageBlank
+{
+}
