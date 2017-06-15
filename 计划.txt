@@ -35,6 +35,10 @@
 	session放在server中，OnReadCB不需要session参数
 2017/06/12
 	添加timer,添加timerManager
+2017/06/15
+	连接mysql并初始化
+	添加服务器之间的认证
+	添加发送服务器快捷方式
 
 
 

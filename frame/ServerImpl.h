@@ -10,12 +10,13 @@
 #include "Config.h"
 #include "Server.h"
 #include "session.h"
+#include "timer.h"
 
 #include "IServerImpl.h"
 #include "MessageDispatch.h"
 
 template<typename T>
-class CServerImpl : public IServerImpl, public CMessageDispatch, public CErrRecord<T>
+class CServerImpl : public IServerImpl, public CMessageDispatch, public CErrRecord<T>, public CTimer<T>
 {
 public:
 	CServerImpl(char *argv[])
@@ -81,6 +82,11 @@ public:
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
 		event_add(evListen2, &tv);
+
+		//init timer
+		InitTimer(m_pEventBase);
+
+		//AddTimer(1, 1, [this](void* a_pArg){}, nullptr, 1);
 	}
 	void Run()
 	{

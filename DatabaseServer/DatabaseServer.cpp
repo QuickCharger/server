@@ -6,6 +6,10 @@ CDatabaseServer::CDatabaseServer(int argc, char *argv[])
 	: CServerImpl(argv)
 {
 	RegistMessage(ServerMessageCode::eTest2, [&](CSession* a_pSession, const char * a_pCh){OnMessageCB1(a_pSession, a_pCh); });
+	AddTimer(1, [](void *a_pArg)
+	{
+	},
+		nullptr, -1);
 }
 
 CDatabaseServer::~CDatabaseServer()
