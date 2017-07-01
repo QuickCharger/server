@@ -57,11 +57,11 @@ void CServer::OnReadCB(int a_nCode, void* a_pArg)
 		{
 			if (certification.type() == Certification::eServer)
 			{
-
+				LOG(INFO) << "New Server come in";
 			}
 			else if (certification.type() == Certification::eClient)
 			{
-
+				LOG(INFO) << "New Client come in";
 			}
 			else
 			{

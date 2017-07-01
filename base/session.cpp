@@ -148,15 +148,15 @@ void CSession::OnWriteCB(bufferevent *a_pBev, void *a_pArg)
 	//LOG(INFO) << "OnWriteCB";
 	if (m_pSendBuffer->GetCurrentSize() != 0)
 	{
-		if (bufferevent_write(a_pBev, m_pSendBuffer->GetBuffer(), m_pSendBuffer->GetCurrentSize()) == 0)
-		{
-			m_Server->OnWriteCB((void*)m_pSendBuffer->GetBuffer());
-			m_pSendBuffer->ClearBuffer();
-		}
-		else
-		{
-			m_Server->OnWriteCB((void*)1);
-		}
+		//if (bufferevent_write(a_pBev, m_pSendBuffer->GetBuffer(), m_pSendBuffer->GetCurrentSize()) == 0)
+		//{
+		//	m_Server->OnWriteCB((void*)m_pSendBuffer->GetBuffer());
+		//	m_pSendBuffer->ClearBuffer();
+		//}
+		//else
+		//{
+		//	m_Server->OnWriteCB((void*)1);
+		//}
 	}
 	//m_funcWriteCB((void*)(0));
 }
@@ -216,6 +216,25 @@ void CSession::OnErrorCB(short a_nEvent)
 void CSession::Send(int a_nMsgCode, ::google::protobuf::Message &a_Msg)
 {
 	std::string strSend = a_Msg.SerializeAsString();
+	int nSize = strSend.size();
+	char *pBuf = nullptr;
+	m_Server->OnPackCB(strSend.c_str(), a_nMsgCode, nSize, &pBuf);
+	m_pSendBuffer->Append(pBuf, nSize);
+	if (bufferevent_write(m_pBufferEvent, m_pSendBuffer->GetBuffer(), m_pSendBuffer->GetCurrentSize()) == 0)
+	{
+		m_Server->OnWriteCB((void*)m_pSendBuffer->GetBuffer());
+		m_pSendBuffer->ClearBuffer();
+	}
+	else
+	{
+		m_Server->OnWriteCB(nullptr);
+	}
+	delete[]pBuf;
+}
+
+void CSession::Send(int a_nMsgCode, ::google::protobuf::Message *a_pMsg)
+{
+	std::string strSend = a_pMsg == nullptr ? "" : a_pMsg->SerializeAsString();
 	int nSize = strSend.size();
 	char *pBuf = nullptr;
 	m_Server->OnPackCB(strSend.c_str(), a_nMsgCode, nSize, &pBuf);
