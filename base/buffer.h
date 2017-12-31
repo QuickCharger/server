@@ -10,13 +10,13 @@ public:
 		eReadBufferStateBufHeadErr = -2,
 		eReadBufferStateOverPackage = -1,
 		eReadBufferStateOK = 0,
-		//eReadBufferStateCanRead = 1,
+		eReadBufferStateCanRead = 1,
 	};
 public:
 	CBuffer(int a_nBufferSize);
 	virtual ~CBuffer();
 	int Append(const char* a_pData, int a_uSize);
-	//int CheckParse();
+	int CheckParse();
 	void DeleteBuffer(int a_nSize);
 	void ClearBuffer();
 

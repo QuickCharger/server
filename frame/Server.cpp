@@ -108,7 +108,13 @@ int CServer::OnUnPackCB(const char *a_pSource, int a_nLength, int &a_nCode, char
 	{
 		return 0;
 	}
-	int nPackLength = *(int*)a_pSource;
+	//int nPackLength = *(int*)a_pSource;
+	int nPackLength = 0;
+	nPackLength |= (a_pSource[0] << 24) & 0xFF000000;
+	nPackLength |= (a_pSource[1] << 16) & 0xFF0000;
+	nPackLength |= (a_pSource[2] << 8) & 0xFF00;
+	nPackLength |= (a_pSource[3] << 0) & 0xFF;
+
 	if (nPackLength <= a_nLength)
 	{
 		a_nCode = *(int*)(a_pSource + sizeof(int));

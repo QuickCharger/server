@@ -71,8 +71,9 @@ public:
 			pServerImpl->OnAccept(a_nClientFD, a_nEvent, a_pArg);
 		}, this);
 		event_add(evListen, nullptr);
+		// EV_CLOSED 没有处理	unfinish
 
-		//新线程连接合理
+		// 1秒之后连接配置文件内的服务器
 		event *evListen2 = event_new(m_pEventBase, -1, 0,
 			[](evutil_socket_t a_Socket, short a_nEvent, void *a_pArg){
 			CServerImpl *pServerImpl = static_cast<CServerImpl*>(a_pArg);
