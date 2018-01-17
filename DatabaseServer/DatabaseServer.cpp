@@ -5,11 +5,11 @@
 CDatabaseServer::CDatabaseServer(int argc, char *argv[])
 	: CServerImpl(argv)
 {
-	RegistMessage(ServerMessageCode::eTest2, [&](CSession* a_pSession, const char * a_pCh){OnMessageCB1(a_pSession, a_pCh); });
-	AddTimer(1, [](void *a_pArg)
-	{
-	},
-		nullptr, -1);
+	//RegistMessage(ServerMessageCode::eTest2, [&](CServer* a_pSession, const char * a_pCh){OnMessageCB1(a_pServer, a_pCh); });
+	//AddTimer(1, [](void *a_pArg)
+	//{
+	//},
+	//	nullptr, -1);
 }
 
 CDatabaseServer::~CDatabaseServer()
@@ -17,18 +17,7 @@ CDatabaseServer::~CDatabaseServer()
 	LOG(INFO) << "CDatabaseServer::~CDatabaseServer";
 }
 
-//void CDatabaseServer::OnMessageCB(CSession* a_pSession, int a_nCode, const char * a_pArg)
-//{
-//	LOG(INFO) << "DatabaseServer::OnMessageCB";
-//
-//	//if (a_nCode == )
-//	//Certification certification;
-//	//if (certification.ParseFromString(a_pArg))
-//	//{
-//	//}
-//};
-
-void CDatabaseServer::OnMessageCB1(CSession* a_pSession, const char * a_pCh)
+void CDatabaseServer::OnMessageCB1(CServer* a_pServer, const char * a_pCh)
 {
 	Certification certification;
 	if (certification.ParseFromString(a_pCh))

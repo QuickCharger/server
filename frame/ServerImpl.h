@@ -1,6 +1,8 @@
 #ifndef _FRAME_SERVERIMPL_H_
 #define _FRAME_SERVERIMPL_H_
 
+#include "commonInclude.h"
+
 #include "ErrRecord.h"
 #include "log.h"
 #include "macro.h"
@@ -15,6 +17,14 @@
 #include "IServerImpl.h"
 #include "MessageDispatch.h"
 
+enum EServerType
+{
+	eServerTypeMin,
+	eDustbin,
+	eDatabaseServer,
+	eServerTypeMax
+};
+
 template<typename T>
 class CServerImpl : public IServerImpl, public CMessageDispatch, public CErrRecord<T>, public CTimer<T>
 {
@@ -24,6 +34,7 @@ public:
 		//InitMinDump();
 		InitNet();
 		InitLog(argv);
+		initServerType();
 
 		m_pConfig = CConfig::GetInstance();
 		if (!m_pConfig->InitConfig(argv[0]))
@@ -54,14 +65,15 @@ public:
 
 		if (bind(m_Socket, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR)) == -1)
 		{
-			perror("bind error");
-			return;
+			//perror("bind error");
+			LOG(ERROR) << "bind error";
+			exit(1);
 		}
 
 		if (listen(m_Socket, 10) == -1)
 		{
-			perror("listen error");
-			return;
+			LOG(ERROR) << "listen failed";
+			exit(1);
 		}
 
 		m_pEventBase = event_base_new();
@@ -119,46 +131,62 @@ public:
 			LOG(WARNING) << "New Connect Accept Failed!!!";
 			return;
 		}
-
+		// 有新的服务器连接到本服务器
 		CServer *pNewServer = new CServer(this, m_pEventBase, socket);
-		//pNewServer->SetMessageCB([this](int a_nCode, void *a_Arg){ 
-		//	this->OnMessageCB(a_nCode, a_Arg);
-		//});
-		//pNewServer->SetSocket(socket);
 	}
-
-	//virtual void OnMessageCB(int, void*) = 0;
-
-	//void OnMessageCB(int a_nCode, void*)
-	//{
-	//	LOG(INFO) << "Template OnMessageCB";
-	//}
 
 	void LinkToServer(evutil_socket_t a_Socket, short a_nEvent, void *a_pArg)
 	{
-		//std::map<std::string, std::pair<std::string, int>> *serverCfg = m_pConfig->GetServer();
 		std::map<std::string, std::pair<std::string, int>> &serverCfg = m_pConfig->GetServer();
 		for (auto it = serverCfg.begin(); it != serverCfg.end(); ++it)
 		{
+			//主动连接其他服务器
 			CServer *pServer = new CServer(this, m_pEventBase, it->first, it->second.first, it->second.second, true);
-			//pServer->SetMessageCB([this](int a_nCode, void *a_Arg){ this->OnMessageCB(a_nCode, a_Arg); });
 		}
 	}
 
-	virtual void OnMessageCB(CSession* a_pSession, int a_nCode, const char *a_pCh)
+	virtual void OnMessageCB(CServer* a_pServer, int a_nCode, const char *a_pCh)
 	{
-		if (!DoMessageCB(a_pSession, a_nCode, a_pCh))
+		if (!DoMessageCB(a_pServer, a_nCode, a_pCh))
 		{
 			LOG(WARNING) << "code: " << a_nCode << " dispatch failed !!!";
 		}
 	};
 
+	virtual bool AcceptServer(CServer *a_pServer)
+	{
+		const std::string strServerName = a_pServer->GetServerName();
+		for (auto it = m_ServerType.begin(); it != m_ServerType.end(); ++it)
+		{
+			if (it->second == strServerName)
+			{
+				m_Server[it->first].insert(a_pServer);
+				return true;
+			}
+		}
+		return false;
+	}
+
+private:
+	void initServerType()
+	{
+		m_ServerType[EServerType::eDustbin] = "dustbinserver";
+		m_ServerType[EServerType::eDatabaseServer] = "databaseserver";
+	}
+
+	void brocast(EServerType a_eServerType, ::google::protobuf::Message *a_pMsg)
+	{
+
+	}
+
 private:
 	CConfig *m_pConfig;
 	DEFINE_TYPE_BASE(int, m_nPort, 0, GetPort, SetPort);
 	evutil_socket_t m_Socket;
-	//DEFINE_TYPE_REFER(event_base*, m_pEventBase, nullptr, GetEventBase, SetEventBase);
 	event_base* m_pEventBase;
+
+	std::map<EServerType, const char*> m_ServerType;
+	std::map<EServerType, std::set<CServer*>> m_Server;
 };
 
 #endif

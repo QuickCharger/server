@@ -12,7 +12,7 @@ public:
 
 	//virtual void OnMessageCB(CSession* a_pSession, int, const char *);
 
-	void OnMessageCB1(CSession* a_pSession, const char * a_pCh);
+	void OnMessageCB1(CServer* a_pSession, const char * a_pCh);
 };
 
 #endif

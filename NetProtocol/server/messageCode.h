@@ -5,8 +5,8 @@ namespace ServerMessageCode
 	enum EMessageCode
 	{
 		eBegin = eServerMessageCode_BEGIN,
-		eTest,
-		eTest2,
+		eRegistServer,
+		eRegistServerResqonse,
 		eTestResponse,
 		eEnd = eServerMessageCode_END,
 	};

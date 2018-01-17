@@ -34,6 +34,7 @@ void protobuf_ShutdownFile_test_2eproto();
 
 class test;
 class Certification;
+class MessageBlank;
 
 enum Certification_TYPE {
   Certification_TYPE_eServer = 1,
@@ -280,6 +281,75 @@ class Certification : public ::google::protobuf::Message {
 
   void InitAsDefaultInstance();
   static Certification* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class MessageBlank : public ::google::protobuf::Message {
+ public:
+  MessageBlank();
+  virtual ~MessageBlank();
+
+  MessageBlank(const MessageBlank& from);
+
+  inline MessageBlank& operator=(const MessageBlank& from) {
+    CopyFrom(from);
+    return *this;
+  }
+
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const MessageBlank& default_instance();
+
+  void Swap(MessageBlank* other);
+
+  // implements Message ----------------------------------------------
+
+  MessageBlank* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const MessageBlank& from);
+  void MergeFrom(const MessageBlank& from);
+  void Clear();
+  bool IsInitialized() const;
+
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const;
+  public:
+  ::google::protobuf::Metadata GetMetadata() const;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // @@protoc_insertion_point(class_scope:MessageBlank)
+ private:
+
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+
+  ::google::protobuf::uint32 _has_bits_[1];
+  mutable int _cached_size_;
+  friend void  protobuf_AddDesc_test_2eproto();
+  friend void protobuf_AssignDesc_test_2eproto();
+  friend void protobuf_ShutdownFile_test_2eproto();
+
+  void InitAsDefaultInstance();
+  static MessageBlank* default_instance_;
 };
 // ===================================================================
 
@@ -568,6 +638,10 @@ inline void Certification::set_allocated_code(::std::string* code) {
   }
   // @@protoc_insertion_point(field_set_allocated:Certification.code)
 }
+
+// -------------------------------------------------------------------
+
+// MessageBlank
 
 
 // @@protoc_insertion_point(namespace_scope)

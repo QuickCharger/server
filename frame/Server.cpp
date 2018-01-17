@@ -24,60 +24,25 @@ CServer::~CServer()
 	LOG(INFO) << "CServer::~CServer";
 }
 
-//void CServer::OnReadCB(const std::string& a_str)
-//{
-//	LOG(INFO) << "Client. OnReadCB";
-//
-//	Certification certification;
-//	if (certification.ParseFromString(a_str))
-//	{
-//		if (certification.type() == Certification::eServer)
-//		{
-//
-//		}
-//		else if (certification.type() == Certification::eClient)
-//		{
-//
-//		}
-//	}
-//	else
-//	{
-//		LOG(ERROR) << "ParseFromString failed";
-//	}
-//}
-
 void CServer::OnReadCB(int a_nCode, void* a_pArg)
 {
 	//LOG(INFO) << "Client. OnReadCB";
 
-	if (a_nCode == ServerMessageCode::eTest)
+	if (a_nCode == ServerMessageCode::eRegistServer)
 	{
-		Certification certification;
-		if (certification.ParseFromString((char*)a_pArg))
+		if (OnConnected(a_pArg))
 		{
-			if (certification.type() == Certification::eServer)
-			{
-
-			}
-			else if (certification.type() == Certification::eClient)
-			{
-
-			}
-			else
-			{
-				LOG(WARNING) << "certification err.";
-			}
+			m_funcOnMessageCB = &IServerImpl::OnMessageCB;
 		}
-		else
-		{
-			LOG(WARNING) << "Parse err. code: " << a_nCode;
-		}
+	}
+	else if (m_funcOnMessageCB != nullptr)
+	{
+		(m_ServerImpl->*m_funcOnMessageCB)(this, a_nCode, (char*)a_pArg);
 	}
 	else
 	{
-		m_ServerImpl->OnMessageCB(m_pSession, a_nCode, (char*)a_pArg);
+		LOG(WARNING) << "Server do MSG before unCertificate";
 	}
-
 }
 
 void CServer::OnWriteCB(void* a_pArg)
@@ -120,41 +85,9 @@ int CServer::OnUnPackCB(const char *a_pSource, int a_nLength, int &a_nCode, char
 	return 0;
 }
 
-//void CServer::OnPackCB(int a_nCode, const std::string& a_strSrc, std::string& a_strDest)
-//{
-//	int nPackSize = sizeof(int) + sizeof(a_nCode) + a_strSrc.size();
-//	char chPackSize[4] = { 0 };
-//	chPackSize[0] = nPackSize / 256 / 256 / 256 % 256;
-//	chPackSize[1] = nPackSize / 256 / 256 % 256;
-//	chPackSize[2] = nPackSize / 256 % 256;
-//	chPackSize[3] = nPackSize % 256;
-//	a_strDest.assign(chPackSize, 4);
-//	a_strDest += a_nCode;
-//	a_strDest += a_strSrc;
-//}
-//
-//bool CServer::OnUnPackCB(const std::string& a_strSrc, int &a_nCode, std::string &a_strDest)
-//{
-//	std::string strCode;
-//	char chPackSize[5] = { 0 };
-//	chPackSize[0] = a_strSrc[0];
-//	chPackSize[1] = a_strSrc[1];
-//	chPackSize[2] = a_strSrc[2];
-//	chPackSize[3] = a_strSrc[3];
-//	int nPackLength = atoi(chPackSize);
-//	if (nPackLength <= static_cast<int>(a_strSrc.size()))
-//	{
-//		strCode.assign(a_strSrc, sizeof(int), sizeof(a_nCode));
-//		a_nCode = atoi(strCode.c_str());
-//		a_strDest.assign(a_strSrc, sizeof(int) + sizeof(a_nCode), a_strSrc.size() - sizeof(int) - sizeof(a_nCode));
-//		return true;
-//	}
-//	return false;
-//}
-
+//发送本服务的配置给连接上的服务器
 bool CServer::OnConnect(CSession* a_pSession)
 {
-	//发送本服务的配置给连接上的服务器
 	CConfig *pConfig = CConfig::GetInstance();
 	std::string strServerName;
 	std::string strCode;
@@ -164,11 +97,46 @@ bool CServer::OnConnect(CSession* a_pSession)
 		msgCertification.set_type(Certification_TYPE_eServer);
 		msgCertification.set_name(strServerName);
 		msgCertification.set_code(strCode);
-		a_pSession->Send(ServerMessageCode::eTest, msgCertification);
-
-		a_pSession->Send(ServerMessageCode::eTest2, msgCertification);
+		a_pSession->Send(ServerMessageCode::eRegistServer, msgCertification);
 		return true;
 	}
 	SetErr(pConfig->GetErr());
 	return false;
+}
+
+//接收其他服务器发来的消息并认证
+bool CServer::OnConnected(void* a_pArg)
+{
+	Certification certification;
+	if (certification.ParseFromString((char*)a_pArg))
+	{
+		if (certification.type() == Certification::eServer)
+		{
+			std::string strCode;
+			if (CConfig::GetInstance()->GetValue("SecretKey", strCode) && strCode == certification.code())
+			{
+				m_strServerName = certification.name();
+				if (!m_ServerImpl->AcceptServer(this))
+				{
+					// TODO
+					return false;
+				}
+				else
+				{
+					return true;
+				}
+			}
+		}
+		LOG(WARNING) << "CServer::OnConnected. Certification type err.";
+	}
+	else
+	{
+		LOG(WARNING) << "CServer::OnConnected. Certification parse failed !!!";
+	}
+	return false;
+}
+
+void CServer::Send(int a_nMsgCode, ::google::protobuf::Message *a_pMsg)
+{
+	m_pSession->Send(a_nMsgCode, *a_pMsg);
 }

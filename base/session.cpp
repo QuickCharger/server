@@ -78,26 +78,6 @@ void CSession::DoConnect()
 	if (connect(m_Socket, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR)) == 0)
 	{
 		LOG(INFO) << "ConnectServer: " << m_strServerName << ":" << m_nPort << " success. Socket: " << m_Socket;
-		//evutil_make_socket_nonblocking(m_Socket);
-		//assert(m_pBufferEvent == nullptr);
-		//m_pBufferEvent = bufferevent_socket_new(m_pEventBase, m_Socket, BEV_OPT_CLOSE_ON_FREE);
-		////bufferevent_setcb(pBufferEvent, OnReadCB, OnWriteCB, OnErrorCB, this);
-		//bufferevent_setcb(
-		//	m_pBufferEvent,
-		//	[](bufferevent *a_pBev, void *a_pArg){
-		//	CSession* pSession = static_cast<CSession*>(a_pArg);
-		//	pSession->OnReadCB(a_pBev, a_pArg);
-		//},
-		//	[](bufferevent *a_pBev, void *a_pArg){
-		//	CSession* pSession = static_cast<CSession*>(a_pArg);
-		//	pSession->OnWriteCB(a_pBev, a_pArg);
-		//},
-		//	[](bufferevent *a_pBen, short a_nEvent, void *a_pArg){
-		//	CSession* pSession = static_cast<CSession*>(a_pArg);
-		//	pSession->OnErrorCB(a_nEvent);
-		//},
-		//	this);
-		//bufferevent_enable(m_pBufferEvent, EV_READ | EV_WRITE | EV_PERSIST);
 		initSocket();
 		//m_funcConnectCB();
 		m_Server->OnConnect(this);
@@ -148,15 +128,15 @@ void CSession::OnWriteCB(bufferevent *a_pBev, void *a_pArg)
 	//LOG(INFO) << "OnWriteCB";
 	if (m_pSendBuffer->GetCurrentSize() != 0)
 	{
-		if (bufferevent_write(a_pBev, m_pSendBuffer->GetBuffer(), m_pSendBuffer->GetCurrentSize()) == 0)
-		{
-			m_Server->OnWriteCB((void*)m_pSendBuffer->GetBuffer());
-			m_pSendBuffer->ClearBuffer();
-		}
-		else
-		{
-			m_Server->OnWriteCB((void*)1);
-		}
+		//if (bufferevent_write(a_pBev, m_pSendBuffer->GetBuffer(), m_pSendBuffer->GetCurrentSize()) == 0)
+		//{
+		//	m_Server->OnWriteCB((void*)m_pSendBuffer->GetBuffer());
+		//	m_pSendBuffer->ClearBuffer();
+		//}
+		//else
+		//{
+		//	m_Server->OnWriteCB((void*)1);
+		//}
 	}
 	//m_funcWriteCB((void*)(0));
 }
@@ -197,25 +177,28 @@ void CSession::OnErrorCB(short a_nEvent)
 	}
 }
 
-//void CSession::Send(const std::string& a_strSrc)
-//{
-//	std::string strDest;
-//	m_Server->OnPackCB(a_strSrc, strDest);
-//	m_pSendBuffer->Append(strDest.c_str(), strDest.size());
-//	if (bufferevent_write(m_pBufferEvent, m_pSendBuffer->GetBuffer(), m_pSendBuffer->GetCurrentSize()) == 0)
-//	{
-//		m_Server->OnWriteCB((void*)m_pSendBuffer->GetBuffer());
-//		m_pSendBuffer->ClearBuffer();
-//	}
-//	else
-//	{
-//		m_Server->OnWriteCB(nullptr);
-//	}
-//}
-
 void CSession::Send(int a_nMsgCode, ::google::protobuf::Message &a_Msg)
 {
 	std::string strSend = a_Msg.SerializeAsString();
+	int nSize = strSend.size();
+	char *pBuf = nullptr;
+	m_Server->OnPackCB(strSend.c_str(), a_nMsgCode, nSize, &pBuf);
+	m_pSendBuffer->Append(pBuf, nSize);
+	if (bufferevent_write(m_pBufferEvent, m_pSendBuffer->GetBuffer(), m_pSendBuffer->GetCurrentSize()) == 0)
+	{
+		m_Server->OnWriteCB((void*)m_pSendBuffer->GetBuffer());
+		m_pSendBuffer->ClearBuffer();
+	}
+	else
+	{
+		m_Server->OnWriteCB(nullptr);
+	}
+	delete[]pBuf;
+}
+
+void CSession::Send(int a_nMsgCode, ::google::protobuf::Message *a_pMsg)
+{
+	std::string strSend = a_pMsg == nullptr ? "" : a_pMsg->SerializeAsString();
 	int nSize = strSend.size();
 	char *pBuf = nullptr;
 	m_Server->OnPackCB(strSend.c_str(), a_nMsgCode, nSize, &pBuf);

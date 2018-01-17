@@ -4,7 +4,7 @@
 #include <functional>
 #include <map>
 
-class CSession;
+class CServer;
 
 class CMessageDispatch
 {
@@ -15,7 +15,7 @@ public:
 		m_mFuncCB.clear();
 	};
 
-	typedef std::function< void(CSession* a_pSession, const char *)> FuncCB;
+	typedef std::function< void(CServer* a_pServer, const char *)> FuncCB;
 public:
 	bool RegistMessage(int a_nCode, FuncCB a_nFunc)
 	{
@@ -39,14 +39,14 @@ public:
 		return true;
 	}
 
-	bool DoMessageCB(CSession* a_pSession, int a_nCode, const char * a_pCh)
+	bool DoMessageCB(CServer* a_pServer, int a_nCode, const char * a_pCh)
 	{
 		FuncCB* cb = getFunc(a_nCode);
 		if (cb == nullptr)
 		{
 			return false;
 		}
-		(*cb)(a_pSession, a_pCh);
+		(*cb)(a_pServer, a_pCh);
 		return true;
 	}
 

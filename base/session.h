@@ -43,6 +43,7 @@ public:
 	//void Send(const std::string& a_strSrc);
 	//void Send(int a_nMsgCode, const google::protobuf::MessageLite& a_Msg);
 	void Send(int a_nMsgCode, ::google::protobuf::Message &a_Msg);
+	void Send(int a_nMsgCode, ::google::protobuf::Message *a_pMsg);
 
 private:
 	void addConnectTimer();

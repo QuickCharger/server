@@ -2,7 +2,8 @@
 #define _FRAME_SERVE_H_
 
 //#include "netbase.h"
-#include <functional>
+#include "commonInclude.h"
+#include "google/protobuf/message.h"
 #include "macro.h"
 #include "IServer.h"
 #include "ErrRecord.h"
@@ -12,7 +13,7 @@
 class CServer : public IServer, public CErrRecord<CServer>
 {
 public:
-	CServer(IServerImpl *a_pServerImpl, event_base* a_pEventBase, SOCKET a_Socket = 0);
+	CServer(IServerImpl *a_pServerImpl, event_base* a_pEventBase, SOCKET a_Socket);
 	CServer(IServerImpl *a_pServerImpl, event_base *a_pEventBase, const std::string& a_strName, const std::string& a_strIP, int a_nPort, bool a_bAutoConnect = false);
 	virtual ~CServer();
 
@@ -28,6 +29,12 @@ public:
 	* 成功连接其他服务器之后的回调
 	*/
 	virtual bool OnConnect(CSession* a_pSession);
+	/*
+	*
+	*/
+	bool OnConnected(void* a_pArg);
+
+	void Send(int a_nMsgCode, ::google::protobuf::Message *a_pMsg);
 
 private:
 	DEFINE_TYPE_BASE(CSession*, m_pSession, nullptr, GetSession, SetSession);
@@ -37,6 +44,9 @@ private:
 
 	IServerImpl *m_ServerImpl = nullptr;
 	//DEFINE_TYPE_BASE(std::function< void(int, void*)>, m_funcMessageCB, nullptr, GetMessageCB, SetMessageCB);
+
+	typedef void(IServerImpl::*Func)(CServer* m_pServer, int, const char *);
+	Func m_funcOnMessageCB = nullptr;
 };
 
 #endif

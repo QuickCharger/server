@@ -25,6 +25,9 @@ const ::google::protobuf::Descriptor* Certification_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   Certification_reflection_ = NULL;
 const ::google::protobuf::EnumDescriptor* Certification_TYPE_descriptor_ = NULL;
+const ::google::protobuf::Descriptor* MessageBlank_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  MessageBlank_reflection_ = NULL;
 
 }  // namespace
 
@@ -69,6 +72,20 @@ void protobuf_AssignDesc_test_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(Certification));
   Certification_TYPE_descriptor_ = Certification_descriptor_->enum_type(0);
+  MessageBlank_descriptor_ = file->message_type(2);
+  static const int MessageBlank_offsets_[1] = {
+  };
+  MessageBlank_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      MessageBlank_descriptor_,
+      MessageBlank::default_instance_,
+      MessageBlank_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(MessageBlank, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(MessageBlank, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(MessageBlank));
 }
 
 namespace {
@@ -85,6 +102,8 @@ void protobuf_RegisterTypes(const ::std::string&) {
     test_descriptor_, &test::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     Certification_descriptor_, &Certification::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    MessageBlank_descriptor_, &MessageBlank::default_instance());
 }
 
 }  // namespace
@@ -94,6 +113,8 @@ void protobuf_ShutdownFile_test_2eproto() {
   delete test_reflection_;
   delete Certification::default_instance_;
   delete Certification_reflection_;
+  delete MessageBlank::default_instance_;
+  delete MessageBlank_reflection_;
 }
 
 void protobuf_AddDesc_test_2eproto() {
@@ -107,13 +128,15 @@ void protobuf_AddDesc_test_2eproto() {
     "str\030\002 \002(\t\"p\n\rCertification\022!\n\004type\030\001 \002(\016"
     "2\023.Certification.TYPE\022\014\n\004name\030\002 \002(\t\022\014\n\004c"
     "ode\030\003 \002(\t\" \n\004TYPE\022\013\n\007eServer\020\001\022\013\n\007eClien"
-    "t\020\002", 163);
+    "t\020\002\"\016\n\014MessageBlank", 179);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "test.proto", &protobuf_RegisterTypes);
   test::default_instance_ = new test();
   Certification::default_instance_ = new Certification();
+  MessageBlank::default_instance_ = new MessageBlank();
   test::default_instance_->InitAsDefaultInstance();
   Certification::default_instance_->InitAsDefaultInstance();
+  MessageBlank::default_instance_->InitAsDefaultInstance();
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_test_2eproto);
 }
 
@@ -776,6 +799,180 @@ void Certification::Swap(Certification* other) {
   ::google::protobuf::Metadata metadata;
   metadata.descriptor = Certification_descriptor_;
   metadata.reflection = Certification_reflection_;
+  return metadata;
+}
+
+
+// ===================================================================
+
+#ifndef _MSC_VER
+#endif  // !_MSC_VER
+
+MessageBlank::MessageBlank()
+  : ::google::protobuf::Message() {
+  SharedCtor();
+  // @@protoc_insertion_point(constructor:MessageBlank)
+}
+
+void MessageBlank::InitAsDefaultInstance() {
+}
+
+MessageBlank::MessageBlank(const MessageBlank& from)
+  : ::google::protobuf::Message() {
+  SharedCtor();
+  MergeFrom(from);
+  // @@protoc_insertion_point(copy_constructor:MessageBlank)
+}
+
+void MessageBlank::SharedCtor() {
+  _cached_size_ = 0;
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+MessageBlank::~MessageBlank() {
+  // @@protoc_insertion_point(destructor:MessageBlank)
+  SharedDtor();
+}
+
+void MessageBlank::SharedDtor() {
+  if (this != default_instance_) {
+  }
+}
+
+void MessageBlank::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* MessageBlank::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return MessageBlank_descriptor_;
+}
+
+const MessageBlank& MessageBlank::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_test_2eproto();
+  return *default_instance_;
+}
+
+MessageBlank* MessageBlank::default_instance_ = NULL;
+
+MessageBlank* MessageBlank::New() const {
+  return new MessageBlank;
+}
+
+void MessageBlank::Clear() {
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool MessageBlank::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) goto failure
+  ::google::protobuf::uint32 tag;
+  // @@protoc_insertion_point(parse_start:MessageBlank)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
+  handle_unusual:
+    if (tag == 0 ||
+        ::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+        ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
+      goto success;
+    }
+    DO_(::google::protobuf::internal::WireFormat::SkipField(
+          input, tag, mutable_unknown_fields()));
+  }
+success:
+  // @@protoc_insertion_point(parse_success:MessageBlank)
+  return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:MessageBlank)
+  return false;
+#undef DO_
+}
+
+void MessageBlank::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:MessageBlank)
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+  // @@protoc_insertion_point(serialize_end:MessageBlank)
+}
+
+::google::protobuf::uint8* MessageBlank::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // @@protoc_insertion_point(serialize_to_array_start:MessageBlank)
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:MessageBlank)
+  return target;
+}
+
+int MessageBlank::ByteSize() const {
+  int total_size = 0;
+
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = total_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void MessageBlank::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const MessageBlank* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const MessageBlank*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void MessageBlank::MergeFrom(const MessageBlank& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void MessageBlank::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void MessageBlank::CopyFrom(const MessageBlank& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool MessageBlank::IsInitialized() const {
+
+  return true;
+}
+
+void MessageBlank::Swap(MessageBlank* other) {
+  if (other != this) {
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+::google::protobuf::Metadata MessageBlank::GetMetadata() const {
+  protobuf_AssignDescriptorsOnce();
+  ::google::protobuf::Metadata metadata;
+  metadata.descriptor = MessageBlank_descriptor_;
+  metadata.reflection = MessageBlank_reflection_;
   return metadata;
 }
 
