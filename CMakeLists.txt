@@ -1,44 +1,40 @@
-cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
-project(Server)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR)
+PROJECT(Server CXX)
 
-#SET(LIBEVENT_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/third_part/libevent-2.0.22-stable/include"
-#	"${CMAKE_CURRENT_SOURCE_DIR}/third_part/libevent-2.0.22-stable/include/event2" 
-#	"${CMAKE_CURRENT_SOURCE_DIR}/third_part/libevent-2.0.22-stable/WIN32-Code" 
-#	"${CMAKE_CURRENT_SOURCE_DIR}/third_part/libevent-2.0.22-stable/WIN32-Code/event2")
-SET(LIBEVENT_INCLUDE	"${CMAKE_CURRENT_SOURCE_DIR}/third_part/libevent-2.1.8-stable/include"
-			"${CMAKE_CURRENT_SOURCE_DIR}/third_part/libevent-2.1.8-stable/WIN32-Code/nmake")
-SET(LIBEVENT_LIB_PATH	"${CMAKE_CURRENT_SOURCE_DIR}/third_part/libevent-2.1.8-stable/lib")
-SET(LIBEVENT_LIB libevent libevent_core libevent_extras)
+SET(THIRDPATH ${CMAKE_SOURCE_DIR}/third_part)
 
-SET(PROTOBUF_INCLUDE	"${CMAKE_CURRENT_SOURCE_DIR}"
-			"${CMAKE_CURRENT_SOURCE_DIR}/third_part/protobuf" 
-			"${CMAKE_CURRENT_SOURCE_DIR}/third_part/protobuf/google/protobuf"
-#			"${CMAKE_CURRENT_SOURCE_DIR}/NetProtocol"
-)
+# LIBEVENT
+SET(LIBEVENT_INCLUDE	"${THIRDPATH}/libevent-2.1.8-stable/include"
+					"${THIRDPATH}/libevent-2.1.8-stable/WIN32-Code/nmake")
+SET(LIBEVENT_LIB_PATH	"${THIRDPATH}/libevent-2.1.8-stable/lib")
+SET(LIBEVENT_LIB		libevent libevent_core libevent_extras)
 
-SET(PROTOBUF_LIB_PATH	"${CMAKE_CURRENT_SOURCE_DIR}/third_part/protobuf/lib")
-SET(PROTOBUF_LIB libeay32 libprotobuf_d)
+# PROTOBUF
+SET(PROTOBUF_INCLUDE	"${THIRDPATH}/protobuf")
+SET(PROTOBUF_LIB_PATH	"${THIRDPATH}/protobuf/lib/windows_x86_32_msvc14")
+SET(PROTOBUF_LIB libprotobuf)
 
-SET(MYSQL_INCLUDE	"${CMAKE_CURRENT_SOURCE_DIR}/third_part/MySQL Connector.C 6.1/include")
-SET(MYSQL_LIB_PATH	"${CMAKE_CURRENT_SOURCE_DIR}/third_part/MySQL Connector.C 6.1/lib")
+# MYSQL
+SET(MYSQL_INCLUDE	"${THIRDPATH}/MySQL Connector.C 6.1/include")
+SET(MYSQL_LIB_PATH	"${THIRDPATH}/MySQL Connector.C 6.1/lib")
 SET(MYSQL_LIB libmysql)
 
-SET(GLOG_INCLUDE	"${CMAKE_CURRENT_SOURCE_DIR}/third_part/glog-0.3.4/src/windows")
-SET(GLOG_LIB_PATH	"${CMAKE_CURRENT_SOURCE_DIR}/third_part/glog-0.3.4/lib")
+# GLOG
+SET(GLOG_INCLUDE		"${THIRDPATH}/glog-0.3.4/src/windows")
+SET(GLOG_LIB_PATH		"${THIRDPATH}/glog-0.3.4/lib")
 SET(GLOG_LIB libglog_static)
 
-SET(BASE_PATH	"${CMAKE_CURRENT_SOURCE_DIR}/base")
-SET(BASE_FRAME	"${CMAKE_CURRENT_SOURCE_DIR}/frame")
-SET(BASE_PROTO_CLIENT "${CMAKE_CURRENT_SOURCE_DIR}/NetProtocol/client")
-SET(BASE_PROTO_SERVER "${CMAKE_CURRENT_SOURCE_DIR}/NetProtocol/server")
+# BASE
+SET(BASE_INCLUDE		"${THIRDPATH}/base/include")
+SET(BASE_LIB_PATH		"${THIRDPATH}/base/lib")
+SET(BASE_LIB base)
 
+# IMPORT FUNCTION
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
-
 include(AddTarget)
 include(AutoFiles)
 
-add_definitions(-D_UNICODE -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
-#add_subdirectory(ClientServer)
-#add_subdirectory(AuthServer)
-add_subdirectory(DatabaseServer)
-add_subdirectory(DustbinServer)
+add_definitions(-D_UNICODE -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS)
+add_subdirectory(third_part/base)
+
+add_subdirectory(server)
