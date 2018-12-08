@@ -1249,7 +1249,7 @@ void LogMessage::Init(const char* file,
 
   if (!FLAGS_log_backtrace_at.empty()) {
     char fileline[128];
-    snprintf(fileline, sizeof(fileline), "%s:%d", data_->basename_, line);
+	snprintf_glog(fileline, sizeof(fileline), "%s:%d", data_->basename_, line);
 #ifdef HAVE_STACKTRACE
     if (!strcmp(FLAGS_log_backtrace_at.c_str(), fileline)) {
       string stacktrace;

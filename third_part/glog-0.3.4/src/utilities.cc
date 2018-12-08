@@ -101,7 +101,7 @@ static void DumpPCAndSymbol(DebugWriter *writerfn, void *arg, void *pc,
       symbol = tmp;
   }
   char buf[1024];
-  snprintf(buf, sizeof(buf), "%s@ %*p  %s\n",
+  snprintf_glog(buf, sizeof(buf), "%s@ %*p  %s\n",
            prefix, kPrintfPointerFieldWidth, pc, symbol);
   writerfn(buf, arg);
 }
@@ -110,7 +110,7 @@ static void DumpPCAndSymbol(DebugWriter *writerfn, void *arg, void *pc,
 static void DumpPC(DebugWriter *writerfn, void *arg, void *pc,
                    const char * const prefix) {
   char buf[100];
-  snprintf(buf, sizeof(buf), "%s@ %*p\n",
+  snprintf_glog(buf, sizeof(buf), "%s@ %*p\n",
            prefix, kPrintfPointerFieldWidth, pc);
   writerfn(buf, arg);
 }
