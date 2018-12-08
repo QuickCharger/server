@@ -1,9 +1,7 @@
 #pragma once
 
 #include "CErrRecord.h"
-#include "log.h"
 #include "macro.h"
-//#include "minidump.h"
 #include "netbase.h"
 
 #include "Config.h"
@@ -28,7 +26,6 @@ class CServerImpl : public IServerImpl, public CMessageDispatch, public CErrReco
 public:
 	CServerImpl(char *argv[])
 	{
-		//InitMinDump();
 		InitNet();
 		InitLog(argv);
 		initServerType();
