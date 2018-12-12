@@ -12,8 +12,6 @@
 template<typename T>
 class CTimer
 {
-	typedef std::function< void(void*)> FuncCB;
-
 	typedef void (T::*timerCB)(void*);
 	struct STimer{
 		event *ev;
