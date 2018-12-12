@@ -87,7 +87,7 @@ public:
 
 		//init timer
 		InitTimer(m_pEventBase);
-		AddTimer(1, &CServerImpl::LinkToServer, nullptr, 1);
+		AddTimer(1, this, &CServerImpl::LinkToServer, nullptr, 1);
 	}
 	void Run()
 	{
@@ -126,63 +126,17 @@ public:
 		CServer *pNewServer = new CServer(this, m_pEventBase, socket);
 	}
 
-
-	/*
-	* timer
-	*/
-	typedef void (T::*timerCB)(void*);
-	struct STimer {
-		event *ev;
-		unsigned int sec;
-		void* target;		// target::cb
-		timerCB cb;
-		void *param;
-		int times;
-	};
-	void AddTimer2(unsigned int sec, timerCB cb, void * param = nullptr, int times = 1)
-	{
-		STimer *scb = new STimer;
-		scb->ev = nullptr;
-		scb->sec = sec;
-		scb->target = this;
-		scb->cb = cb;
-		scb->param = param;
-		scb->times = times;
-		event *evListen = event_new(m_pEventBase, -1, EV_PERSIST | EV_TIMEOUT,
-			[](evutil_socket_t a_Socket, short a_nEvent, void *a_pArg) {
-			STimer *scb = (STimer*)a_pArg;
-			T * target = static_cast<T*>(scb->target);
-			(target->*(scb->cb))(scb->param);
-			LOG(INFO) << "timer times " << scb->times;
-			if (scb->times >= 0 && --scb->times <= 0)
-			{
-				LOG(INFO) << "delete timer. event: ";
-				evtimer_del(scb->ev);
-				delete scb;
-			}
-		}
-		, scb);
-		scb->ev = evListen;
-
-		timeval tv;
-		tv.tv_sec = sec;
-		tv.tv_usec = 0;
-		evtimer_add(evListen, &tv);
-	}
-	/*
-	* timer end
-	*/
-
-
 	//void LinkToServer(evutil_socket_t a_Socket, short a_nEvent, void *a_pArg)
 	void LinkToServer(void* a_pArg)
 	{
 		std::vector<std::pair<std::string, int>> serverCfg = m_pConfig->GetServerList();
-		//for (auto it = serverCfg.begin(); it != serverCfg.end(); ++it)
-		//{
-		//	//主动连接其他服务器
-		//	CServer *pServer = new CServer(this, m_pEventBase, "", it->first, it->second, true);
-		//}
+		for (auto it = serverCfg.begin(); it != serverCfg.end(); ++it)
+		{
+			//主动连接其他服务器
+			CServer *pServer = new CServer(this, m_pEventBase, "", it->first, it->second, true);
+		}
+
+		// test
 		//static int counter = 1;
 		//LOG(INFO) << "counter " << counter;
 		//counter++;

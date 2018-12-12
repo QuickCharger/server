@@ -30,7 +30,7 @@ public:
 		m_pEventBase = a_pEventBase;
 	}
 
-	int AddTimer(unsigned int sec, timerCB cb, void * param = nullptr, int times = 1)
+	int AddTimer(unsigned int sec, void *t, timerCB cb, void * param = nullptr, int times = 1)
 	{
 		if (m_pEventBase == nullptr)
 		{
@@ -40,7 +40,7 @@ public:
 		STimer *scb = new STimer;
 		scb->ev = nullptr;
 		scb->sec = sec;
-		scb->target = this;
+		scb->target = (void*)t;
 		scb->cb = cb;
 		scb->param = param;
 		scb->times = times;
