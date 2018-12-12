@@ -28,7 +28,7 @@ namespace Func{
 
 	std::string Truncate(const std::string& a_strSource, const char a_ch)
 	{
-		string str(a_strSource, 0, a_strSource.find(a_ch));
+		string str(a_strSource, 0, a_strSource.rfind(a_ch));
 		return str;
 	}
 

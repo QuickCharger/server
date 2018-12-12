@@ -40,7 +40,7 @@ public:
 		STimer *scb = new STimer;
 		scb->ev = nullptr;
 		scb->sec = sec;
-		scb->target = (void*)t;
+		scb->target = t;
 		scb->cb = cb;
 		scb->param = param;
 		scb->times = times;
