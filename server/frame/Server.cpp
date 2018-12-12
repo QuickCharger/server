@@ -105,7 +105,8 @@ int CServer::OnUnPackCB(const char *a_pSource, int a_nLength, int &a_nCode, char
 //发送本服务的配置给连接上的服务器
 bool CServer::OnConnect(CSession* a_pSession)
 {
-	CConfig *pConfig = CConfig::GetInstance();
+	//CConfig *pConfig = CConfig::GetInstance();
+	CConfig *pConfig;
 	std::string strServerName;
 	std::string strCode;
 	if (pConfig->GetValue("ServerName", strServerName) && pConfig->GetValue("SecretKey", strCode))
@@ -130,7 +131,7 @@ bool CServer::OnConnected(void* a_pArg)
 		if (certification.type() == Certification::eServer)
 		{
 			std::string strCode;
-			if (CConfig::GetInstance()->GetValue("SecretKey", strCode) && strCode == certification.code())
+			//if (CConfig::GetInstance()->GetValue("SecretKey", strCode) && strCode == certification.code())
 			{
 				m_strServerName = certification.name();
 				if (!m_ServerImpl->AcceptServer(this))

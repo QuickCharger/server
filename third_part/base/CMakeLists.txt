@@ -8,6 +8,7 @@ SET(src
 	include/CBufferSend.h	src/CBufferSend.cpp
 	include/CErrRecord.h
 	include/CFile.h		src/CFile.cpp
+	include/CTime.h		src/CTime.cpp
 	include/Func.h		src/Func.cpp
 	include/macro.h)
 

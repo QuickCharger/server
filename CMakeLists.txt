@@ -24,6 +24,11 @@ SET(GLOG_INCLUDE		"${THIRDPATH}/glog-0.3.4/src/windows")
 SET(GLOG_LIB_PATH		"${THIRDPATH}/glog-0.3.4/lib")
 SET(GLOG_LIB libglog_static)
 
+# JSON
+SET(JSON_INCLUDE		"${THIRDPATH}/json/include")
+SET(JSON_LIB_PATH		"${THIRDPATH}/json/lib")
+SET(JSON_LIB			json)
+
 # BASE
 SET(BASE_INCLUDE		"${THIRDPATH}/base/include")
 SET(BASE_LIB_PATH		"${THIRDPATH}/base/lib")

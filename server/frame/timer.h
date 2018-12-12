@@ -1,84 +1,76 @@
 #pragma once
 
 #include <iostream>
-
 #include <functional>
+
 #include <event2/bufferevent.h>
 #include <event2/event.h>
+
+#include "log.h"
+
 
 template<typename T>
 class CTimer
 {
 	typedef std::function< void(void*)> FuncCB;
 
-	struct TimerParam
-	{
-		TimerParam(void *a_pT, int a_nMillSecond, int a_nCount, FuncCB a_pCB, void *a_pArg)
-			: t(a_pT)
-			, count(a_nCount)
-			, cb(a_pCB)
-			, arg(a_pArg)
-		{
-			tv.tv_sec = a_nMillSecond/1000;
-			tv.tv_usec = a_nMillSecond%1000;
-		}
-		void *t;
-		struct event *ev;
-		int count;
-		FuncCB cb;
-		void *arg;
-		struct timeval tv;
+	typedef void (T::*timerCB)(void*);
+	struct STimer{
+		event *ev;
+		unsigned int sec;
+		void* target;		// target::cb
+		timerCB cb;
+		void *param;
+		int times;
 	};
-
-public:
-	CTimer()
-	{
-
-	}
-
-	virtual ~CTimer()
-	{
-
-	}
 
 public:
 	void InitTimer(event_base* a_pEventBase)
 	{
 		m_pEventBase = a_pEventBase;
 	}
-	void AddTimer(int a_nMillSec, FuncCB a_nFunc, void *a_pArg, int a_nCount = 1)
-	{
-		if (a_nMillSec < 1000)
-		{
-			LOG(WARNING) << "AddTimer. a_nMillSec " << a_nMillSec << " maybe too short ?";
-		}
-		TimerParam *pParam = new TimerParam(this, a_nMillSec, a_nCount, a_nFunc, a_pArg);
 
-		event* evListen2 = evtimer_new(m_pEventBase,
-			[](evutil_socket_t fd, short event, void *a_pArg)
-		{
-			TimerParam *pParam = static_cast<TimerParam *>(a_pArg);
-			T* t = static_cast<T*>(pParam->t);
-			t->TimeoutCB(fd, event, a_pArg);
-		},
-			pParam);
-		pParam->ev = evListen2;
-		evtimer_add(pParam->ev, &pParam->tv);
-	}
-
-	void TimeoutCB(int fd, short event, void* a_pArg)
+	int AddTimer(unsigned int sec, timerCB cb, void * param = nullptr, int times = 1)
 	{
-		TimerParam *pParam = static_cast<TimerParam *>(a_pArg);
-		(pParam->cb)(pParam->arg);
-		pParam->count--;
-		if (pParam->count != 0)
+		if (m_pEventBase == nullptr)
 		{
-			evtimer_add(pParam->ev, &pParam->tv);
+			LOG(ERROR) << "Timer not initialize.";
+			return 0;
 		}
-		else
+		STimer *scb = new STimer;
+		scb->ev = nullptr;
+		scb->sec = sec;
+		scb->target = this;
+		scb->cb = cb;
+		scb->param = param;
+		scb->times = times;
+		event *evListen = event_new(m_pEventBase, -1, EV_PERSIST | EV_TIMEOUT,
+			[](evutil_socket_t a_Socket, short a_nEvent, void *a_pArg) {
+			STimer *scb = (STimer*)a_pArg;
+			T * target = static_cast<T*>(scb->target);
+			(target->*(scb->cb))(scb->param);
+			LOG(INFO) << "timer times " << scb->times;
+			if (scb->times >= 0 && --scb->times <= 0)
+			{
+				LOG(INFO) << "delete timer. event: ";
+				evtimer_del(scb->ev);
+				delete scb;
+			}
+		}
+		, scb);
+		scb->ev = evListen;
+
+		if (!evListen)
 		{
-			delete pParam;
+			delete scb;
+			return 0;
 		}
+
+		timeval tv;
+		tv.tv_sec = sec;
+		tv.tv_usec = 0;
+		evtimer_add(evListen, &tv);
+		return (int)evListen;
 	}
 
 private:

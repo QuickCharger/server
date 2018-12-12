@@ -1,33 +1,24 @@
 #include "log.h"
+#include "CTime.h"
 
 void InitLog(char *argv[])
 {
-	FLAGS_max_log_size = 1000;
-	FLAGS_log_dir = ".\\log";
-	time_t tCurrent = time(nullptr);
-	struct tm *pTime = localtime(&tCurrent);
-	char chTime[100];
-	strftime(chTime, sizeof(chTime), "%Y_%m_%d %H_%M_%S", pTime);
-	std::string strTime = chTime;
-	std::string LOG_INFO_FILE = FLAGS_log_dir + strTime + ".info";
-	std::string LOG_WARNING_FILE = FLAGS_log_dir + strTime + ".warn";
-	std::string LOG_ERROR_FILE = FLAGS_log_dir + strTime + ".error";
-	std::string LOG_FATAL_FILE = FLAGS_log_dir + strTime + ".fatal";
-	google::SetLogFilenameExtension(".log");
-	FLAGS_logbufsecs = 0;
-
+	FLAGS_log_dir = "./log";
+	std::string fileName = CTime::currentDate();
+	
 	google::InitGoogleLogging(argv[0]);
-	FLAGS_colorlogtostderr = true;
-	google::SetLogDestination(google::INFO, LOG_INFO_FILE.c_str());
-	google::SetLogDestination(google::WARNING, LOG_WARNING_FILE.c_str());
-	google::SetLogDestination(google::GLOG_ERROR, LOG_ERROR_FILE.c_str());
-	google::SetLogDestination(google::FATAL, LOG_FATAL_FILE.c_str());
+	google::SetLogDestination(google::INFO,		std::string(fileName + ".info").c_str());
+	google::SetLogDestination(google::WARNING,	std::string(fileName + ".warn").c_str());
+	google::SetLogDestination(google::GLOG_ERROR,	std::string(fileName + ".error").c_str());
+	google::SetLogDestination(google::FATAL,	std::string(fileName + ".fatal").c_str());
+	google::SetLogFilenameExtension(".log");
 
 	// 设置级别高于 google::INFO 的日志同时输出到屏幕
 	google::SetStderrLogging(google::INFO);
+	FLAGS_max_log_size = 1000;
+	FLAGS_colorlogtostderr = true;
 	// 缓冲日志输出，默认为30秒，此处改为立即输出
 	FLAGS_logbufsecs = 0;
-	// 当磁盘被写满时，停止日志输出
 	FLAGS_stop_logging_if_full_disk = true;
 }
 

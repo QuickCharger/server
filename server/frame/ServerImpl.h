@@ -24,26 +24,27 @@ template<typename T>
 class CServerImpl : public IServerImpl, public CMessageDispatch, public CErrRecord, public CTimer<T>
 {
 public:
+
 	CServerImpl(char *argv[])
 	{
 		InitNet();
 		InitLog(argv);
 		initServerType();
 
-		m_pConfig = CConfig::GetInstance();
+		//m_pConfig = CConfig::GetInstance();
+		m_pConfig = new CConfig;
 		if (!m_pConfig->InitConfig(argv[0]))
 		{
-			//SetErr(m_pConfig->GetErr());
 			LOG(ERROR) << m_pConfig->GetErr();
 			exit(1);
 		}
-		if (!m_pConfig->GetValue("port", m_nPort))
+		if (!m_pConfig->GetValue("Port", m_nPort))
 		{
-			SetErr(m_pConfig->GetErr());
+			LOG(ERROR) << m_pConfig->GetErr();
 			exit(1);
 		}
 
-		std::map<std::string, std::pair<std::string, int>> &mServer = m_pConfig->GetServer();
+		//std::map<std::string, std::pair<std::string, int>> &mServer = m_pConfig->GetServer();
 
 		m_Socket = socket(AF_INET, SOCK_STREAM, 0);
 		evutil_make_socket_nonblocking(m_Socket);
@@ -57,9 +58,9 @@ public:
 		addrSrv.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
 		addrSrv.sin_port = htons(m_nPort);
 
+
 		if (bind(m_Socket, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR)) == -1)
 		{
-			//perror("bind error");
 			LOG(ERROR) << "bind error";
 			exit(1);
 		}
@@ -71,6 +72,11 @@ public:
 		}
 
 		m_pEventBase = event_base_new();
+		if (m_pEventBase == nullptr)
+		{
+			LOG(ERROR) << "event_base_new failed";
+			exit(1);
+		}
 		event *evListen = event_new(m_pEventBase, m_Socket, EV_READ | EV_PERSIST,
 			[](evutil_socket_t a_nClientFD, short a_nEvent, void *a_pArg){
 			CServerImpl *pServerImpl = static_cast<CServerImpl*>(a_pArg);
@@ -79,21 +85,9 @@ public:
 		event_add(evListen, nullptr);
 		// EV_CLOSED 没有处理	unfinish
 
-		// 1秒之后连接配置文件内的服务器
-		event *evListen2 = event_new(m_pEventBase, -1, 0,
-			[](evutil_socket_t a_Socket, short a_nEvent, void *a_pArg){
-			CServerImpl *pServerImpl = static_cast<CServerImpl*>(a_pArg);
-			pServerImpl->LinkToServer(a_Socket, a_nEvent, a_pArg);
-		}, this);
-		timeval tv;
-		tv.tv_sec = 1;
-		tv.tv_usec = 0;
-		event_add(evListen2, &tv);
-
 		//init timer
 		InitTimer(m_pEventBase);
-
-		//AddTimer(1, 1, [this](void* a_pArg){}, nullptr, 1);
+		AddTimer(1, &CServerImpl::LinkToServer, nullptr, 1);
 	}
 	void Run()
 	{
@@ -106,9 +100,11 @@ public:
 
 		if (m_pEventBase != nullptr)
 		{
+			event_base_free(m_pEventBase);
 			m_pEventBase = nullptr;
 		}
 
+		CloseLog();
 		CloseNet();
 	};
 
@@ -130,14 +126,66 @@ public:
 		CServer *pNewServer = new CServer(this, m_pEventBase, socket);
 	}
 
-	void LinkToServer(evutil_socket_t a_Socket, short a_nEvent, void *a_pArg)
+
+	/*
+	* timer
+	*/
+	typedef void (T::*timerCB)(void*);
+	struct STimer {
+		event *ev;
+		unsigned int sec;
+		void* target;		// target::cb
+		timerCB cb;
+		void *param;
+		int times;
+	};
+	void AddTimer2(unsigned int sec, timerCB cb, void * param = nullptr, int times = 1)
 	{
-		std::map<std::string, std::pair<std::string, int>> &serverCfg = m_pConfig->GetServer();
-		for (auto it = serverCfg.begin(); it != serverCfg.end(); ++it)
-		{
-			//主动连接其他服务器
-			CServer *pServer = new CServer(this, m_pEventBase, it->first, it->second.first, it->second.second, true);
+		STimer *scb = new STimer;
+		scb->ev = nullptr;
+		scb->sec = sec;
+		scb->target = this;
+		scb->cb = cb;
+		scb->param = param;
+		scb->times = times;
+		event *evListen = event_new(m_pEventBase, -1, EV_PERSIST | EV_TIMEOUT,
+			[](evutil_socket_t a_Socket, short a_nEvent, void *a_pArg) {
+			STimer *scb = (STimer*)a_pArg;
+			T * target = static_cast<T*>(scb->target);
+			(target->*(scb->cb))(scb->param);
+			LOG(INFO) << "timer times " << scb->times;
+			if (scb->times >= 0 && --scb->times <= 0)
+			{
+				LOG(INFO) << "delete timer. event: ";
+				evtimer_del(scb->ev);
+				delete scb;
+			}
 		}
+		, scb);
+		scb->ev = evListen;
+
+		timeval tv;
+		tv.tv_sec = sec;
+		tv.tv_usec = 0;
+		evtimer_add(evListen, &tv);
+	}
+	/*
+	* timer end
+	*/
+
+
+	//void LinkToServer(evutil_socket_t a_Socket, short a_nEvent, void *a_pArg)
+	void LinkToServer(void* a_pArg)
+	{
+		std::vector<std::pair<std::string, int>> serverCfg = m_pConfig->GetServerList();
+		//for (auto it = serverCfg.begin(); it != serverCfg.end(); ++it)
+		//{
+		//	//主动连接其他服务器
+		//	CServer *pServer = new CServer(this, m_pEventBase, "", it->first, it->second, true);
+		//}
+		//static int counter = 1;
+		//LOG(INFO) << "counter " << counter;
+		//counter++;
 	}
 
 	virtual void OnMessageCB(CServer* a_pServer, int a_nCode, const char *a_pCh)
@@ -176,7 +224,7 @@ private:
 
 private:
 	CConfig *m_pConfig;
-	DEFINE_TYPE_BASE(int, m_nPort, 0, GetPort, SetPort);
+	int m_nPort = 0;
 	evutil_socket_t m_Socket;
 	event_base* m_pEventBase;
 
