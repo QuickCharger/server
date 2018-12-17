@@ -1,10 +1,11 @@
-#pragma once
+Ôªø#pragma once
 
 #include "CErrRecord.h"
 #include "macro.h"
-#include "netbase.h"
 
 #include "Config.h"
+#include "Libevent.h"
+#include "net.h"
 #include "Server.h"
 #include "session.h"
 #include "timer.h"
@@ -29,114 +30,61 @@ public:
 	{
 		InitNet();
 		InitLog(argv);
+		InitTimer(CLibevent::GetInstance());
 		initServerType();
+		initConfig(argv[0]);
 
-		//m_pConfig = CConfig::GetInstance();
-		m_pConfig = new CConfig;
-		if (!m_pConfig->InitConfig(argv[0]))
-		{
-			LOG(ERROR) << m_pConfig->GetErr();
-			exit(1);
-		}
-		if (!m_pConfig->GetValue("Port", m_nPort))
-		{
-			LOG(ERROR) << m_pConfig->GetErr();
-			exit(1);
-		}
+		//		m_Socket = socket(AF_INET, SOCK_STREAM, 0);
+		//evutil_make_socket_nonblocking(m_Socket);
+		//		evutil_make_listen_socket_reuseable(m_Socket);	//ËÆæÂÆöÊé•Âè£ÂèØÈáçÁî®,Win‰∏ä‰∏çÂèØÁî®
 
-		//std::map<std::string, std::pair<std::string, int>> &mServer = m_pConfig->GetServer();
+		startAccepting();
 
-		m_Socket = socket(AF_INET, SOCK_STREAM, 0);
-		evutil_make_socket_nonblocking(m_Socket);
-#ifndef WIN32
-		evutil_make_listen_socket_reuseable(sockSrv);	//…Ë∂®Ω”ø⁄ø…÷ÿ”√,Win…œ≤ªø…”√
-#endif
-
-		SOCKADDR_IN addrSrv;
-		std::memset(&addrSrv, 0, sizeof(SOCKADDR_IN));
-		addrSrv.sin_family = AF_INET;
-		addrSrv.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
-		addrSrv.sin_port = htons(m_nPort);
-
-
-		if (bind(m_Socket, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR)) == -1)
-		{
-			LOG(ERROR) << "bind error";
-			exit(1);
-		}
-
-		if (listen(m_Socket, 10) == -1)
-		{
-			LOG(ERROR) << "listen failed";
-			exit(1);
-		}
-
-		m_pEventBase = event_base_new();
-		if (m_pEventBase == nullptr)
-		{
-			LOG(ERROR) << "event_base_new failed";
-			exit(1);
-		}
-		event *evListen = event_new(m_pEventBase, m_Socket, EV_READ | EV_PERSIST,
-			[](evutil_socket_t a_nClientFD, short a_nEvent, void *a_pArg){
-			CServerImpl *pServerImpl = static_cast<CServerImpl*>(a_pArg);
-			pServerImpl->OnAccept(a_nClientFD, a_nEvent, a_pArg);
-		}, this);
-		event_add(evListen, nullptr);
-		// EV_CLOSED √ª”–¥¶¿Ì	unfinish
-
-		//init timer
-		InitTimer(m_pEventBase);
 		AddTimer(1, this, &CServerImpl::LinkToServer, nullptr, 1);
 	}
 	void Run()
 	{
-		event_base_dispatch(m_pEventBase);
+		CLibevent::Run();
 	};
 	virtual ~CServerImpl()
 	{
 		LOG(INFO) << "PROGRAM FINISH\n" << "press any key to exit";
 		getchar();
-
-		if (m_pEventBase != nullptr)
-		{
-			event_base_free(m_pEventBase);
-			m_pEventBase = nullptr;
-		}
-
 		CloseLog();
 		CloseNet();
+		CLibevent::Close();
+
+		evconnlistener_free(m_pListener);
 	};
 
-	void OnAccept(int a_nClientFD, short a_nEvent, void *a_pArg)
-	{
-		SOCKADDR_IN addrIn;
-		int len = sizeof(SOCKADDR);
-		SOCKET socket = accept(a_nClientFD, (SOCKADDR*)&addrIn, &len);
-		if (socket > 0)
-		{
-			LOG(INFO) << "New Connect Accept Success. sockID: " << socket;
-		}
-		else
-		{
-			LOG(WARNING) << "New Connect Accept Failed!!!";
-			return;
-		}
-		// ”––¬µƒ∑˛ŒÒ∆˜¡¨Ω”µΩ±æ∑˛ŒÒ∆˜
-		CServer *pNewServer = new CServer(this, m_pEventBase, socket);
-	}
+	//void OnAccept(int a_nClientFD, short a_nEvent, void *a_pArg)
+	//{
+	//	SOCKADDR_IN addrIn;
+	//	int len = sizeof(SOCKADDR);
+	//	SOCKET socket = accept(a_nClientFD, (SOCKADDR*)&addrIn, &len);
+	//	if (socket > 0)
+	//	{
+	//		LOG(INFO) << "New Connect Accept Success. sockID: " << socket;
+	//	}
+	//	else
+	//	{
+	//		LOG(WARNING) << "New Connect Accept Failed!!!";
+	//		return;
+	//	}
+	//	// ÊúâÊñ∞ÁöÑÊúçÂä°Âô®ËøûÊé•Âà∞Êú¨ÊúçÂä°Âô®
+	//	CServer *pNewServer = new CServer(this, m_pEventBase, socket);
+	//}
 
-	//void LinkToServer(evutil_socket_t a_Socket, short a_nEvent, void *a_pArg)
 	void LinkToServer(void* a_pArg)
 	{
-		std::vector<std::pair<std::string, int>> serverCfg = m_pConfig->GetServerList();
+		std::vector<std::pair<std::string, int>> serverCfg = CConfig::GetInstance()->GetServerList();
 		for (auto it = serverCfg.begin(); it != serverCfg.end(); ++it)
 		{
-			//÷˜∂Ø¡¨Ω”∆‰À˚∑˛ŒÒ∆˜
-			CServer *pServer = new CServer(this, m_pEventBase, "", it->first, it->second, true);
+			//‰∏ªÂä®ËøûÊé•ÂÖ∂‰ªñÊúçÂä°Âô®
+			CServer *pServer = new CServer(this, "", it->first, it->second, true);
 		}
 
-		// test
+		//// test
 		//static int counter = 1;
 		//LOG(INFO) << "counter " << counter;
 		//counter++;
@@ -150,7 +98,7 @@ public:
 		}
 	};
 
-	virtual bool AcceptServer(CServer *a_pServer)
+	virtual bool AcceptServerCB(CServer *a_pServer)
 	{
 		const std::string strServerName = a_pServer->GetServerName();
 		for (auto it = m_ServerType.begin(); it != m_ServerType.end(); ++it)
@@ -171,16 +119,57 @@ private:
 		m_ServerType[EServerType::eDatabaseServer] = "databaseserver";
 	}
 
+	void initConfig(char *pCh)
+	{
+		CConfig* config = CConfig::GetInstance();
+		if (!config->InitConfig(pCh))
+		{
+			LOG(ERROR) << config->GetErr();
+			exit(1);
+		}
+		config->GetValue("Port", m_nPort);
+	}
+
+	void startAccepting()
+	{
+		if (m_nPort == 0)
+			return;
+
+		DLOG(INFO) << "open port " << m_nPort << " start accepting";
+
+		SOCKADDR_IN sin;
+		std::memset(&sin, 0, sizeof(sin));
+		sin.sin_family = AF_INET;
+		sin.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
+		sin.sin_port = htons(m_nPort);
+
+		// listen() Á¨¨‰∫å‰∏™ÂèÇÊï∞ÊòØÈìæÊé•Â§Ñ‰∫éESTABLISHÁöÑÊúÄÂ§ßÊï∞Èáè Ê≠§Â§ÑËÆæÁΩÆ128‰∏™
+		m_pListener = evconnlistener_new_bind(CLibevent::GetInstance(), listener_cb,
+			this, LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE, 128, (struct sockaddr*)&sin, sizeof(sin));
+		if (!m_pListener)
+		{
+			LOG(ERROR) << "evconnlistener_new_bind error";
+			exit(1);
+		}
+	}
+
+	static void listener_cb(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *sa, int socklen, void *param)
+	{
+		CServerImpl *pServerImpl = static_cast<CServerImpl*>(param);
+		CServer *pNewServer = new CServer(pServerImpl, fd);
+
+		DLOG(INFO) << "new socket income. fd " << fd << ". Desc: " << pNewServer->Desc().c_str();
+	}
+
 	void brocast(EServerType a_eServerType, ::google::protobuf::Message *a_pMsg)
 	{
 
 	}
 
 private:
-	CConfig *m_pConfig;
 	int m_nPort = 0;
 	evutil_socket_t m_Socket;
-	event_base* m_pEventBase;
+	evconnlistener* m_pListener;
 
 	std::map<EServerType, const char*> m_ServerType;
 	std::map<EServerType, std::set<CServer*>> m_Server;

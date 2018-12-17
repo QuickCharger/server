@@ -10,6 +10,16 @@
 //	return &conf;
 //}
 
+CConfig* CConfig::GetInstance()
+{
+	static CConfig* config = nullptr;
+	if (!config)
+	{
+		config = new CConfig;
+	}
+	return config;
+}
+
 bool CConfig::InitConfig(const char *a_pFileName)
 {
 	std::string strConfigName = Func::Truncate(a_pFileName, '.') + ".cfg";
@@ -87,10 +97,10 @@ bool CConfig::InitConfig(const char *a_pFileName)
 	//		m_Server[strServerName] = make_pair(strIP, nPort);
 	//	}
 	//}
-	return true;
+	//return true;
 }
 
-bool CConfig::GetValue(const std::string& a_strKey, std::string& a_strValue)
+bool CConfig::GetValue(const std::string& a_strKey, std::string& a_strValue) const
 {
 	if (!m_root.isMember(a_strKey))
 		return false;
@@ -105,9 +115,8 @@ bool CConfig::GetValue(const std::string& a_strKey, std::string& a_strValue)
 	return false;
 }
 
-bool CConfig::GetValue(const std::string& a_strKey, int &a_Value)
+bool CConfig::GetValue(const std::string& a_strKey, int &a_Value) const
 {
-	i++;
 	if (!m_root.isMember(a_strKey))
 		return false;
 
@@ -127,9 +136,8 @@ bool CConfig::GetValue(const std::string& a_strKey, int &a_Value)
 	return false;
 }
 
-std::vector<std::pair<std::string, int>> CConfig::GetServerList()
+std::vector<std::pair<std::string, int>> CConfig::GetServerList() const
 {
-	i++;
 	std::vector<std::pair<std::string, int>> ret;
 
 	if (!m_root.isMember("ServerList"))

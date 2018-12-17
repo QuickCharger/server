@@ -8,20 +8,17 @@
 
 class CConfig : public CErrRecord
 {
-public:
+private:
 	CConfig()	{};
 	virtual ~CConfig()	{};
 
 public:
-	//static CConfig* GetInstance();
+	static CConfig* GetInstance();
 	bool InitConfig(const char *a_pFileName);
-	bool GetValue(const std::string& a_strKey, std::string& a_strValue);
-	bool GetValue(const std::string& a_strKey, int &a_Value);
-	std::vector<std::pair<std::string, int>> GetServerList();
-	int i = 0;
-	
+	bool GetValue(const std::string& a_strKey, std::string& a_strValue) const;
+	bool GetValue(const std::string& a_strKey, int &a_Value) const;
+	std::vector<std::pair<std::string, int>> GetServerList() const;
+
 private:
-	//std::map<std::string, std::string> m_DefaultValue;
-	//std::map<std::string, std::pair<std::string, int>> m_Server;
 	Json::Value m_root;
 };

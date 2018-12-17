@@ -13,16 +13,20 @@ public:
 	virtual ~CBuffer();
 	void ReAllocate(int a_nBufferSize);
 
+	unsigned int Available();
 	bool Append(const char* a_pData, int a_size);
 	void DropFront(unsigned int a_nSize);
 	void DropBack(unsigned int a_nSize);
 	void Clear();
 
-	int  GetCurrentSize()	{ return m_nCurrentSize; };
+	unsigned int  GetCurrentSize()	{ return m_nCurrentSize; };
 	char* GetBuffer()		{ return m_pBuffer + m_nCurrentPoint; }
 	void GetBuffer(char*&p)	{ p = m_pBuffer + m_nCurrentPoint; }
-	void GetBuffer(char *&p, int& n);
+	void GetBuffer(char *&p, unsigned int& n);
 	void Test();
+
+protected:
+	const static unsigned int m_skIntSize = sizeof(int);
 
 private:
 	void init();

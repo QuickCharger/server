@@ -17,14 +17,12 @@ public:
 	CBufferRecv();
 	CBufferRecv(int a_nBufferSize);
 	virtual ~CBufferRecv();
-	EStatus Append(const char* a_pData, int a_nSize);
-	EStatus GetPackage(char*& a_pData, int& a_nSize);
+	EStatus Append(const char* a_pData, unsigned int a_nSize);
+	EStatus GetPackage(char*& a_pData, unsigned int& a_nSize);
+	EStatus GetPackage(int& a_nCode, char*& a_pData, unsigned int& a_nSize);
 	void DropPackage();
-	enum EStatus CheckParse();
 
 private:
-	int calHeadSize(const char *p);
-
-private:
-	const static int m_skIntSize = sizeof(int);
+	unsigned int calHeadSize(const char *p);
+	enum EStatus checkParse(char*& a_pData, unsigned int a_nSize);
 };

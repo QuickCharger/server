@@ -1,4 +1,4 @@
-#include "netbase.h"
+#include "net.h"
 
 #ifdef WIN32
 #include <WinSock2.h>

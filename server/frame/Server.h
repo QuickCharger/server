@@ -11,18 +11,13 @@
 class CServer : public IServer, public CErrRecord
 {
 public:
-	CServer(IServerImpl *a_pServerImpl, event_base* a_pEventBase, SOCKET a_Socket);
-	CServer(IServerImpl *a_pServerImpl, event_base *a_pEventBase, const std::string& a_strName, const std::string& a_strIP, int a_nPort, bool a_bAutoConnect = false);
+	CServer(IServerImpl *a_pServerImpl, evutil_socket_t a_Socket);
+	CServer(IServerImpl *a_pServerImpl, const std::string& a_strName, const std::string& a_strIP, int a_nPort, bool a_bAutoConnect = false);
 	virtual ~CServer();
 
-	//virtual void OnReadCB(const std::string& a_str);	//unfinish,a_pArg可能会有\0，导致转成string被截断。
-	//virtual void OnReadCB(CSession* a_pSession, int a_nCode, void* a_pArg);
-	virtual void OnReadCB(int a_nCode, void* a_pArg);
+	virtual void OnReadCB(int a_nCode, const std::string& msg);
 	virtual void OnWriteCB(void* a_pArg);
 	virtual void OnErrorCB(void* a_pArg);
-
-	virtual void OnPackCB(const char *a_pSource, int a_nCode, int& a_nLength, char **a_pDest);
-	virtual int OnUnPackCB(const char *a_pSource, int a_nLength, int &a_nCode, char **a_pDest);
 	/*
 	* 成功连接其他服务器之后的回调
 	*/
@@ -30,9 +25,12 @@ public:
 	/*
 	*
 	*/
-	bool OnConnected(void* a_pArg);
+	bool OnConnected(const std::string& a_msg);
 
 	void Send(int a_nMsgCode, ::google::protobuf::Message *a_pMsg);
+
+	void Address(std::string& a_strIP, int& a_nPort);
+	std::string Desc();
 
 private:
 	DEFINE_TYPE_BASE(CSession*, m_pSession, nullptr, GetSession, SetSession);
@@ -43,6 +41,6 @@ private:
 	IServerImpl *m_ServerImpl = nullptr;
 	//DEFINE_TYPE_BASE(std::function< void(int, void*)>, m_funcMessageCB, nullptr, GetMessageCB, SetMessageCB);
 
-	typedef void(IServerImpl::*Func)(CServer* m_pServer, int, const char *);
+	typedef void(IServerImpl::*Func)(CServer* m_pServer, int, const std::string&);
 	Func m_funcOnMessageCB = nullptr;
 };

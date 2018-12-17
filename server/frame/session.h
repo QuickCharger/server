@@ -10,13 +10,14 @@
 
 class IServer;
 class IServerManager;
-class CBuffer;
+class CBufferRecv;
+class CBufferSend;
 
 class CSession
 {
 public:
-	CSession(IServer *a_pServer, event_base* a_pEventBase, SOCKET a_Socket);
-	CSession(IServer *a_pServer, event_base *a_pEventBase, const std::string& a_strName, const std::string& a_strIP, int a_nPort, bool a_bAutoConnect = false);
+	CSession(IServer *a_pServer, evutil_socket_t a_Socket);
+	CSession(IServer *a_pServer, const std::string& a_strName, const std::string& a_strIP, int a_nPort, bool a_bAutoConnect = false);
 	virtual ~CSession();
 
 	//void Connect();
@@ -37,8 +38,8 @@ public:
 private:
 	void addConnectTimer();
 	void initSocket();
+	bool send(int a_nMsgCode, std::string& str);
 
-	event_base* m_pEventBase = nullptr;
 	bufferevent* m_pBufferEvent = nullptr;
 
 	//DEFINE_TYPE_BASE(std::function< void(void*)>, m_funcReadCB, nullptr, GetReadCB, SetReadCB);
@@ -59,14 +60,16 @@ private:
 	//DEFINE_TYPE_BASE(std::function< void(void)>, m_funcConnectCB, nullptr, GetConnectCB, SetConnectCB);
 
 	DEFINE_TYPE_BASE(bool,		m_bAutoConnect, false, GetAutoConnect, SetAutoConnect);
-	DEFINE_TYPE_BASE(SOCKET,	m_Socket, 0, GetSocket, SetSocket);
-	DEFINE_TYPE_BASE(CBuffer*,	m_pReadBuffer, nullptr, GetReadBuffer, SetReadBuffer);
-	DEFINE_TYPE_BASE(CBuffer*,	m_pSendBuffer, nullptr, GetSendBuffer, SetSendBuffer);
+	DEFINE_TYPE_BASE(CBufferRecv*,	m_pReadBuffer, nullptr, GetReadBuffer, SetReadBuffer);
+	DEFINE_TYPE_BASE(CBufferSend*,	m_pSendBuffer, nullptr, GetSendBuffer, SetSendBuffer);
 	DEFINE_TYPE_BASE(int,		m_nPort, 1024, GetPort, SetPort);
 	DEFINE_TYPE_REFER(std::string,	m_strServerName,	"", GetServerName, SetServerName);
-	DEFINE_TYPE_REFER(std::string,	m_strServerIP,		"", GetServerIP, SetServerIP);
+	DEFINE_TYPE_REFER(std::string,	m_strServerIP, "", GetServerIP, SetServerIP);
+	DEFINE_TYPE_BASE(evutil_socket_t,	m_Socket, 0, GetSocket, SetSocket);
 
 	DEFINE_TYPE_BASE(IServer*, m_Server, nullptr, GetServer, SetServer);
-	//DEFINE_TYPE_BASE(IServerManager*, m_ServerManager, nullptr, GetServerManager, SetServerManager);
-	//DEFINE_TYPE_BASE(ISessionSelector*, m_SessionSelector, nullptr, GetSessionSelector, SetSessionSelector);
+
+	char* m_pRecvBuffer;
+	static const unsigned int m_skReadBufferSize = 2000;
+	static const unsigned int m_skBufferSize = 10000;	// 10KB
 };

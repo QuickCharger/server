@@ -47,11 +47,12 @@ public:
 			STimer *scb = (STimer*)a_pArg;
 			T * target = static_cast<T*>(scb->target);
 			(target->*(scb->cb))(scb->param);
-			LOG(INFO) << "timer times " << scb->times;
+			//DLOG(INFO) << "timer times " << scb->times;
 			if (scb->times >= 0 && --scb->times <= 0)
 			{
-				LOG(INFO) << "delete timer. event: ";
+				//DLOG(INFO) << "delete timer. event: ";
 				evtimer_del(scb->ev);
+				//event_free();
 				delete scb;
 			}
 		}

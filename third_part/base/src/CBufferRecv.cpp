@@ -16,26 +16,35 @@ CBufferRecv::~CBufferRecv()
 {
 }
 
-CBufferRecv::EStatus CBufferRecv::Append(const char* a_pData, int a_nSize)
+CBufferRecv::EStatus CBufferRecv::Append(const char* a_pData, unsigned int a_nSize)
 {
 	if(!CBuffer::Append(a_pData, a_nSize))
 	{
 		return eOverPackage;
 	}
-	return CheckParse();
+	return eOK;
 }
 
-CBufferRecv::EStatus CBufferRecv::GetPackage(char*& a_pData, int& a_nSize)
+CBufferRecv::EStatus CBufferRecv::GetPackage(char*& a_pData, unsigned int& a_nSize)
 {
 	a_pData = nullptr;
 	a_nSize = 0;
-	if (CheckParse() != eCanRead)
+	if (checkParse(a_pData, a_nSize) != eCanRead)
 	{
 		return eCannotRead;
 	}
-	int n;
-	this->GetBuffer(a_pData, n);
-	a_nSize = calHeadSize(a_pData);
+	return eCanRead;
+}
+
+CBufferRecv::EStatus CBufferRecv::GetPackage(int& a_nCode, char*& a_pData, unsigned int& a_nSize)
+{
+	a_pData = nullptr;
+	a_nSize = 0;
+	if (checkParse(a_pData, a_nSize) != eCanRead)
+	{
+		return eCannotRead;
+	}
+	a_nCode = *(int*)a_pData;
 	a_pData += m_skIntSize;
 	a_nSize -= m_skIntSize;
 	return eCanRead;
@@ -43,39 +52,40 @@ CBufferRecv::EStatus CBufferRecv::GetPackage(char*& a_pData, int& a_nSize)
 
 void CBufferRecv::DropPackage()
 {
-	char *p = nullptr;
-	int n = 0;
-	CBuffer::GetBuffer(p, n);
-	if (n != 0)
-	{
-		n = calHeadSize(p);
-		CBuffer::DropFront(n);
-	}
+	char *pData = nullptr;
+	unsigned int size = 0;
+	CBuffer::GetBuffer(pData, size);
+	if (size < m_skIntSize)
+		return;
+	size = calHeadSize(pData);
+	CBuffer::DropFront(size);
 }
 
-enum CBufferRecv::EStatus CBufferRecv::CheckParse()
+unsigned int CBufferRecv::calHeadSize(const char *p)
 {
-	char *p = nullptr;
-	int n = 0;
-	this->GetBuffer(p, n);
-	if (n < m_skIntSize)
-	{
-		return eCannotRead;
-	}
-	int packSize = calHeadSize(p);
-	if (packSize <= n)
-	{
-		return eCanRead;
-	}
-	return eCannotRead;
-}
-
-int CBufferRecv::calHeadSize(const char *p)
-{
-	int nSize = 0;
+	unsigned int nSize = 0;
 	nSize |= (p[0] << 24) & 0xFF000000;
 	nSize |= (p[1] << 16) & 0xFF0000;
 	nSize |= (p[2] << 8) & 0xFF00;
 	nSize |= (p[3] << 0) & 0xFF;
 	return nSize;
+}
+
+enum CBufferRecv::EStatus CBufferRecv::checkParse(char*& a_pData, unsigned int a_nSize)
+{
+	char *pData = nullptr;
+	unsigned int size = 0;
+	this->GetBuffer(pData, size);
+	if (size < m_skIntSize)
+	{
+		return eCannotRead;
+	}
+	unsigned int packSize = calHeadSize(pData);
+	if (packSize > size)
+	{
+		return eCannotRead;
+	}
+	a_pData = pData + m_skIntSize;
+	a_nSize = packSize - m_skIntSize;
+	return eCanRead;
 }

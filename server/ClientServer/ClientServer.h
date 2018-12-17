@@ -4,11 +4,11 @@
 #include <string>
 #include "ServerImpl.h"
 
-class CDustbinServer : public CServerImpl<CDustbinServer>
+class CClientServer : public CServerImpl<CClientServer>
 {
 public:
-	CDustbinServer(int argc, char* argv[]);
-	~CDustbinServer();
+	CClientServer(int argc, char* argv[]);
+	~CClientServer();
 
 	//virtual void OnMessageCB(int a_nCode, void *a_Arg);
 

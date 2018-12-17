@@ -1,23 +1,23 @@
-#include "DustbinServer.h"
+#include "ClientServer.h"
 
 /*
 * map
 * (消息号，消息体，接收函数)
 */
 
-CDustbinServer::CDustbinServer(int argc, char *argv[])
+CClientServer::CClientServer(int argc, char *argv[])
 	: CServerImpl(argv)
 {
 
-	//AddTimer(1, this, &CDustbinServer::OnTimer, nullptr, 10);
+	AddTimer(1, this, &CClientServer::OnTimer, nullptr, 10);
 }
 
-CDustbinServer::~CDustbinServer()
+CClientServer::~CClientServer()
 {
 	LOG(INFO) << "CDustbinServer::~CDustbinServer";
 }
 
-void CDustbinServer::OnTimer(void*)
+void CClientServer::OnTimer(void*)
 {
 	static int counter = 1;
 	LOG(INFO) << "counter " << counter;

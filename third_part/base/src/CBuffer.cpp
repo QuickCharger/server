@@ -27,6 +27,11 @@ void CBuffer::ReAllocate(int a_nBufferSize)
 	init();
 }
 
+unsigned int CBuffer::Available()
+{
+	return m_nBufferSize - m_nCurrentSize;
+}
+
 bool CBuffer::Append(const char* a_pData, int a_size)
 {
 	if ((m_nCurrentSize + a_size) > m_nBufferSize)
@@ -71,7 +76,7 @@ void CBuffer::Clear()
 	m_nCurrentPoint = 0;
 }
 
-void CBuffer::GetBuffer(char *&p, int& n)
+void CBuffer::GetBuffer(char *&p, unsigned int& n)
 {
 	p = m_pBuffer + m_nCurrentPoint;
 	n = m_nCurrentSize;
@@ -85,7 +90,7 @@ void CBuffer::Test()
 	this->Append("1234", 4);
 	this->Append("1234567890", 10);
 	char *p = nullptr;
-	int n = 0;
+	unsigned int n = 0;
 	GetBuffer(p, n);
 	DropFront(8);
 	GetBuffer(p, n);
