@@ -71,7 +71,7 @@ unsigned int CBufferRecv::calHeadSize(const char *p)
 	return nSize;
 }
 
-enum CBufferRecv::EStatus CBufferRecv::checkParse(char*& a_pData, unsigned int a_nSize)
+enum CBufferRecv::EStatus CBufferRecv::checkParse(char*& a_pData, unsigned int& a_nSize)
 {
 	char *pData = nullptr;
 	unsigned int size = 0;

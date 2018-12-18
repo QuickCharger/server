@@ -76,6 +76,21 @@ void CBuffer::Clear()
 	m_nCurrentPoint = 0;
 }
 
+unsigned int CBuffer::GetCurrentSize()
+{
+	return m_nCurrentSize;
+};
+
+char* CBuffer::GetBuffer()
+{
+	return m_pBuffer + m_nCurrentPoint;
+}
+
+void CBuffer::GetBuffer(char*&p)
+{
+	p = m_pBuffer + m_nCurrentPoint;
+}
+
 void CBuffer::GetBuffer(char *&p, unsigned int& n)
 {
 	p = m_pBuffer + m_nCurrentPoint;

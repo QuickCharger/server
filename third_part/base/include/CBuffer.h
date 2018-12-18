@@ -19,9 +19,9 @@ public:
 	void DropBack(unsigned int a_nSize);
 	void Clear();
 
-	unsigned int  GetCurrentSize()	{ return m_nCurrentSize; };
-	char* GetBuffer()		{ return m_pBuffer + m_nCurrentPoint; }
-	void GetBuffer(char*&p)	{ p = m_pBuffer + m_nCurrentPoint; }
+	unsigned int  GetCurrentSize();
+	char* GetBuffer();
+	void GetBuffer(char*&p);
 	void GetBuffer(char *&p, unsigned int& n);
 	void Test();
 

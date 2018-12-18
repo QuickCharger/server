@@ -108,7 +108,7 @@ void CSession::OnReadCB(bufferevent *a_pBev, void *a_pArg)
 	memset(m_pRecvBuffer, 0, m_skReadBufferSize);
 	//while中append可能溢出 todo
 	unsigned int size;
-	while (size = bufferevent_read(a_pBev, m_pRecvBuffer, m_skReadBufferSize) && size > 0)
+	while (size = bufferevent_read(a_pBev, m_pRecvBuffer, m_skReadBufferSize), size > 0)
 	{
 		CSession* pSession = static_cast<CSession*>(a_pArg);
 		m_pReadBuffer->Append(m_pRecvBuffer, size);

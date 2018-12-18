@@ -24,5 +24,5 @@ public:
 
 private:
 	unsigned int calHeadSize(const char *p);
-	enum EStatus checkParse(char*& a_pData, unsigned int a_nSize);
+	enum EStatus checkParse(char*& a_pData, unsigned int& a_nSize);
 };
