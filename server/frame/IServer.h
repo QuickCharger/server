@@ -12,13 +12,9 @@ public:
 	IServer() {};
 	virtual ~IServer() {};
 
-	void SetCallBack() {};
-
 	virtual void OnReadCB(int a_nCode, const std::string& msg) = 0;
 	virtual void OnWriteCB(void* a_pArg) = 0;
 	virtual void OnErrorCB(void* a_pArg) = 0;
-
-	virtual bool OnConnect(CSession* a_pSession) = 0;
 
 	//CSession *m_pSession = nullptr;
 

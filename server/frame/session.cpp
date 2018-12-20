@@ -14,91 +14,32 @@
 CSession::CSession(IServer *a_pServer, evutil_socket_t a_Socket)
 {
 	m_Server = a_pServer;
-	m_pRecvBuffer = new char[m_skReadBufferSize];
-	m_pReadBuffer = new CBufferRecv(m_skBufferSize);
-	m_pSendBuffer = new CBufferSend(m_skBufferSize);
 	m_Socket = a_Socket;
 
+	initBuffer();
 	initSocket();
-}
-
-CSession::CSession(IServer *a_pServer, const std::string& a_strName, const std::string& a_strIP, int a_nPort, bool a_bAutoConnect)
-{
-	m_Server = a_pServer;
-	m_pRecvBuffer = new char[m_skReadBufferSize];
-	m_pReadBuffer = new CBufferRecv(m_skBufferSize);
-	m_pSendBuffer = new CBufferSend(m_skBufferSize);
-	m_strServerName = a_strName;
-	m_strServerIP = a_strIP;
-	m_nPort = a_nPort;
-	m_bAutoConnect = a_bAutoConnect;
-	//Connect();
-	addConnectTimer();
 }
 
 CSession::~CSession()
 {
-	if (m_Socket != 0)
-	{
-		closesocket(m_Socket);
-	}
-	if (m_pReadBuffer)
-	{
-		delete m_pReadBuffer;
-		m_pReadBuffer = nullptr;
-	}
-	if (m_pSendBuffer)
-	{
-		delete m_pSendBuffer;
-		m_pSendBuffer = nullptr;
-	}
-	if (m_pRecvBuffer)
-	{
-		delete m_pRecvBuffer;
-		m_pRecvBuffer = nullptr;
-	}
+	DLOG(INFO) << "~CSESSION";
+	Close();
 }
 
-//void CSession::Connect()
-//{
-//	addConnectTimer();
-//}
-
-void CSession::CloseSocket()
+void CSession::Close()
 {
-	if (m_Socket != 0)
+	closeBuffer();
+	if (m_Socket)
 	{
 		LOG(INFO) << "socket close. fd: " << m_Socket;
 		//closesocket(m_Socket);
 		EVUTIL_CLOSESOCKET(m_Socket);
 		m_Socket = 0;
 	}
-}
-
-void CSession::DoConnect()
-{
-	assert(m_Socket == 0);
-	m_Socket = socket(AF_INET, SOCK_STREAM, 0);
-	SOCKADDR_IN addrSrv;
-	addrSrv.sin_addr.S_un.S_addr = inet_addr(m_strServerIP.c_str());
-	addrSrv.sin_family = AF_INET;
-	addrSrv.sin_port = htons(m_nPort);
-	//bufferevent_socket_connect();
-	if (connect(m_Socket, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR)) == 0)
+	if (m_pEvent)
 	{
-		LOG(INFO) << "ConnectServer: " << m_strServerName << ":" << m_nPort << " success. Socket: " << m_Socket;
-		initSocket();
-		//m_funcConnectCB();
-		m_Server->OnConnect(this);
-	}
-	else
-	{
-		CloseSocket();
-		if (m_bAutoConnect)
-		{
-			addConnectTimer();
-		}
-		LOG(INFO) << "ConnectServer: " << m_strServerName << ":" << m_nPort << " failed.";
+		bufferevent_free(m_pEvent);
+		m_pEvent = nullptr;
 	}
 }
 
@@ -144,40 +85,30 @@ void CSession::OnWriteCB(bufferevent *a_pBev, void *a_pArg)
 	//m_funcWriteCB((void*)(0));
 }
 
+/*
+* 暂不清楚各种错误的区别, 统一认为错误
+*/
 void CSession::OnErrorCB(short a_nEvent)
 {
-	LOG(INFO) << "OnErrorCB";
-	if (m_pBufferEvent != nullptr)
-	{
-		bufferevent_free(m_pBufferEvent);
-		m_pBufferEvent = nullptr;
-	}
+	DLOG(INFO) << "OnErrorCB, eventId " << a_nEvent;
 	if (a_nEvent & BEV_EVENT_TIMEOUT)
 	{
-		LOG(WARNING) << "BEV_EVENT_TIMEOUT";
+		DLOG(WARNING) << "BEV_EVENT_TIMEOUT";
 	}
 	else if (a_nEvent & BEV_EVENT_EOF)
 	{
-		LOG(WARNING) << "BEV_EVENT_EOF";
-		CloseSocket();
-		if (m_bAutoConnect)
-		{
-			addConnectTimer();
-		}
+		DLOG(INFO) << "fd disconnected.";
 	}
 	else if (a_nEvent & BEV_EVENT_ERROR)
 	{
-		LOG(WARNING) << "BEV_EVENT_ERROR";
-		CloseSocket();
-		if (m_bAutoConnect)
-		{
-			addConnectTimer();
-		}
+		DLOG(WARNING) << "BEV_EVENT_ERROR";
 	}
 	else
 	{
 		LOG(WARNING) << "unknown error. Event Code: " << a_nEvent;
 	}
+	m_Server->OnErrorCB(this);
+	delete this;
 }
 
 void CSession::Send(int a_nMsgCode, ::google::protobuf::Message &a_Msg)
@@ -190,28 +121,13 @@ void CSession::Send(int a_nMsgCode, ::google::protobuf::Message *a_pMsg)
 	send(a_nMsgCode, a_pMsg == nullptr ? "" : a_pMsg->SerializeAsString());
 }
 
-void CSession::addConnectTimer()
-{
-	event* evListen2 = evtimer_new(CLibevent::GetInstance(),
-		[](int, short, void *a_pArg){
-		CSession* pSession = static_cast<CSession*>(a_pArg);
-		pSession->DoConnect();
-	},
-		this);
-
-	timeval tv;
-	tv.tv_sec = 2;
-	tv.tv_usec = 0;
-	int nResult = evtimer_add(evListen2, &tv);
-}
-
 void CSession::initSocket()
 {
 	evutil_make_socket_nonblocking(m_Socket);
-	assert(m_pBufferEvent == nullptr);
-	m_pBufferEvent = bufferevent_socket_new(CLibevent::GetInstance(), m_Socket, BEV_OPT_CLOSE_ON_FREE);
+	assert(m_pEvent == nullptr);
+	m_pEvent = bufferevent_socket_new(CLibevent::GetInstance(), m_Socket, BEV_OPT_CLOSE_ON_FREE);
 	bufferevent_setcb(
-		m_pBufferEvent,
+		m_pEvent,
 		[](bufferevent *a_pBev, void *a_pArg){
 		CSession* pSession = static_cast<CSession*>(a_pArg);
 		pSession->OnReadCB(a_pBev, a_pArg);
@@ -225,9 +141,35 @@ void CSession::initSocket()
 		pSession->OnErrorCB(a_nEvent);
 	},
 		this);
-	bufferevent_enable(m_pBufferEvent, EV_READ | EV_WRITE | EV_PERSIST);
+	bufferevent_enable(m_pEvent, EV_READ | EV_WRITE | EV_PERSIST);
+}
 
-	m_Server->SetCallBack();
+void CSession::initBuffer()
+{
+	m_pRecvBuffer = new char[m_skReadBufferSize];
+	m_pReadBuffer = new CBufferRecv(m_skBufferSize);
+	m_pSendBuffer = new CBufferSend(m_skBufferSize);
+	reinitBuffer();
+}
+
+void CSession::reinitBuffer()
+{
+	memset(m_pRecvBuffer, 0, m_skReadBufferSize);
+	m_pReadBuffer->Clear();
+	m_pSendBuffer->Clear();
+}
+
+void CSession::closeBuffer()
+{
+	if(m_pRecvBuffer)
+		delete m_pRecvBuffer;
+	if (m_pReadBuffer)
+		delete m_pReadBuffer;
+	if (m_pSendBuffer)
+		delete m_pSendBuffer;
+	m_pRecvBuffer = nullptr;
+	m_pReadBuffer = nullptr;
+	m_pSendBuffer = nullptr;
 }
 
 bool CSession::send(int a_nMsgCode, std::string& str)
@@ -239,7 +181,7 @@ bool CSession::send(int a_nMsgCode, std::string& str)
 		return false;
 	}
 
-	if (bufferevent_write(m_pBufferEvent, m_pSendBuffer->GetBuffer(), m_pSendBuffer->GetCurrentSize()) == 0)
+	if (bufferevent_write(m_pEvent, m_pSendBuffer->GetBuffer(), m_pSendBuffer->GetCurrentSize()) == 0)
 	{
 		m_Server->OnWriteCB((void*)m_pSendBuffer->GetBuffer());
 		m_pSendBuffer->Clear();

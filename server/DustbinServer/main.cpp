@@ -155,7 +155,7 @@
 //
 //void onWriteCB(bufferevent *a_pBen, void *a_pArg)
 //{
-//	//TODO
+//
 //}
 //
 //void onErrorCB(bufferevent *a_pBen, short a_nEvent, void *a_pArg)

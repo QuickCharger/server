@@ -3,6 +3,8 @@
 #include "CErrRecord.h"
 #include "macro.h"
 
+#include <signal.h>
+
 #include "Config.h"
 #include "Libevent.h"
 #include "net.h"
@@ -30,9 +32,11 @@ public:
 	{
 		InitNet();
 		InitLog(argv);
-		InitTimer(CLibevent::GetInstance());
+		//InitTimer(CLibevent::GetInstance());
+		CLibevent::GetInstance();
 		initServerType();
 		initConfig(argv[0]);
+		initSignal();
 
 		//		m_Socket = socket(AF_INET, SOCK_STREAM, 0);
 		//evutil_make_socket_nonblocking(m_Socket);
@@ -46,10 +50,10 @@ public:
 	{
 		CLibevent::Run();
 	};
+
 	virtual ~CServerImpl()
 	{
-		LOG(INFO) << "PROGRAM FINISH\n" << "press any key to exit";
-		getchar();
+		LOG(INFO) << "PROGRAM FINISH";
 		CloseLog();
 		CloseNet();
 		CLibevent::Close();
@@ -81,7 +85,8 @@ public:
 		for (auto it = serverCfg.begin(); it != serverCfg.end(); ++it)
 		{
 			//主动连接其他服务器
-			CServer *pServer = new CServer(this, "", it->first, it->second, true);
+			CServer *pServer = new CServer(this, it->first, it->second, true);
+			pServer->Connect();
 		}
 
 		//// test
@@ -98,6 +103,11 @@ public:
 		}
 	};
 
+	virtual bool AcceptClientCB(CServer *a_pServer)
+	{
+		return true;
+	}
+
 	virtual bool AcceptServerCB(CServer *a_pServer)
 	{
 		const std::string strServerName = a_pServer->GetServerName();
@@ -110,6 +120,11 @@ public:
 			}
 		}
 		return false;
+	}
+
+	virtual void LostServer(CServer* a_pServer)
+	{
+
 	}
 
 private:
@@ -128,6 +143,15 @@ private:
 			exit(1);
 		}
 		config->GetValue("Port", m_nPort);
+	}
+
+	void initSignal()
+	{
+		if (!CLibevent::CaughtSignal(SIGINT, signal_cb, this))
+		{
+			LOG(WARNING) << "Could not create/add a signal event!";
+			CLibevent::Close();
+		}
 	}
 
 	void startAccepting()
@@ -161,6 +185,12 @@ private:
 		DLOG(INFO) << "new socket income. fd " << fd << ". Desc: " << pNewServer->Desc().c_str();
 	}
 
+	static void signal_cb(evutil_socket_t fd, short sig, void * arg)
+	{
+		LOG(INFO) << "Caught an interrupt signal";
+		CLibevent::Close();
+	}
+
 	void brocast(EServerType a_eServerType, ::google::protobuf::Message *a_pMsg)
 	{
 
@@ -169,7 +199,8 @@ private:
 private:
 	int m_nPort = 0;
 	evutil_socket_t m_Socket;
-	evconnlistener* m_pListener;
+	evconnlistener* m_pListener = nullptr;
+	event* signal_event = nullptr;
 
 	std::map<EServerType, const char*> m_ServerType;
 	std::map<EServerType, std::set<CServer*>> m_Server;

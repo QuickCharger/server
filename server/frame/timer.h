@@ -1,11 +1,13 @@
 #pragma once
 
-#include <iostream>
 #include <functional>
+#include <map>
+#include <iostream>
 
-#include <event2/bufferevent.h>
-#include <event2/event.h>
+//#include <event2/bufferevent.h>
+//#include <event2/event.h>
 
+#include "Libevent.h"
 #include "log.h"
 
 
@@ -23,14 +25,23 @@ class CTimer
 	};
 
 public:
-	void InitTimer(event_base* a_pEventBase)
+	virtual ~CTimer()
 	{
-		m_pEventBase = a_pEventBase;
+		for (auto it = m_mTimer.begin(); it != m_mTimer.end(); ++it)
+		{
+			evtimer_del(it->first);
+			delete it->second;
+		}
+		m_mTimer.clear();
 	}
+	//void InitTimer(event_base* a_pEventBase)
+	//{
+	//	m_pEventBase = a_pEventBase;
+	//}
 
-	int AddTimer(unsigned int sec, void *t, timerCB cb, void * param = nullptr, int times = 1)
+	event* AddTimer(unsigned int sec, void *t, timerCB cb, void * param = nullptr, int times = 1)
 	{
-		if (m_pEventBase == nullptr)
+		if (CLibevent::GetInstance() == nullptr)
 		{
 			LOG(ERROR) << "Timer not initialize.";
 			return 0;
@@ -42,18 +53,22 @@ public:
 		scb->cb = cb;
 		scb->param = param;
 		scb->times = times;
-		event *evListen = event_new(m_pEventBase, -1, EV_PERSIST | EV_TIMEOUT,
+		event *evListen = event_new(CLibevent::GetInstance(), -1, EV_PERSIST | EV_TIMEOUT,
 			[](evutil_socket_t a_Socket, short a_nEvent, void *a_pArg) {
 			STimer *scb = (STimer*)a_pArg;
 			T * target = static_cast<T*>(scb->target);
 			(target->*(scb->cb))(scb->param);
 			//DLOG(INFO) << "timer times " << scb->times;
+			DLOG(INFO) << "on  Timer sec " << scb->sec << "s" << ". ev " << scb->ev;
 			if (scb->times >= 0 && --scb->times <= 0)
 			{
 				//DLOG(INFO) << "delete timer. event: ";
-				evtimer_del(scb->ev);
+				//evtimer_del(scb->ev);
 				//event_free();
-				delete scb;
+				//delete scb;
+
+				DLOG(INFO) << "del Timer sec " << scb->sec << "s" << ". ev " << scb->ev;
+				target->DeleteTimer(scb->ev);
 			}
 		}
 		, scb);
@@ -65,13 +80,32 @@ public:
 			return 0;
 		}
 
+		evtimer_add(evListen, &getTimeval(sec, 0));
+
+		DLOG(INFO) << "add Timer sec " << sec << "s" << ". ev " << evListen;
+
+		m_mTimer[evListen] = scb;
+		return evListen;
+	}
+
+	bool DeleteTimer(event * ev)
+	{
+		if (m_mTimer.find(ev) == m_mTimer.end())
+			return false;
+		delete m_mTimer[ev];
+		evtimer_del(ev);
+		m_mTimer.erase(ev);
+		return true;
+	}
+
+	timeval getTimeval(int a_sec, int a_usec)
+	{
 		timeval tv;
-		tv.tv_sec = sec;
-		tv.tv_usec = 0;
-		evtimer_add(evListen, &tv);
-		return (int)evListen;
+		tv.tv_sec = a_sec;
+		tv.tv_usec = a_usec;
+		return tv;
 	}
 
 private:
-	event_base* m_pEventBase = nullptr;
+	std::map<event*, STimer*> m_mTimer;
 };

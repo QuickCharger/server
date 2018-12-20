@@ -61,6 +61,11 @@ void CBufferRecv::DropPackage()
 	CBuffer::DropFront(size);
 }
 
+void CBufferRecv::Clear()
+{
+	CBuffer::Clear();
+}
+
 unsigned int CBufferRecv::calHeadSize(const char *p)
 {
 	unsigned int nSize = 0;

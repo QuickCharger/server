@@ -9,7 +9,7 @@ CClientServer::CClientServer(int argc, char *argv[])
 	: CServerImpl(argv)
 {
 
-	AddTimer(1, this, &CClientServer::OnTimer, nullptr, 10);
+	//AddTimer(1, this, &CClientServer::OnTimer, nullptr, 10);
 }
 
 CClientServer::~CClientServer()

@@ -21,6 +21,7 @@ public:
 	EStatus GetPackage(char*& a_pData, unsigned int& a_nSize);
 	EStatus GetPackage(int& a_nCode, char*& a_pData, unsigned int& a_nSize);
 	void DropPackage();
+	void Clear();
 
 private:
 	unsigned int calHeadSize(const char *p);
