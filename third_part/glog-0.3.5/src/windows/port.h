@@ -112,7 +112,7 @@ enum { STDIN_FILENO = 0, STDOUT_FILENO = 1, STDERR_FILENO = 2 };
  * name vsnprintf, since windows defines that (but not snprintf (!)).
  */
 #ifndef HAVE_SNPRINTF
-extern int GOOGLE_GLOG_DLL_DECL snprintf(char *str, size_t size,
+extern int GOOGLE_GLOG_DLL_DECL snprintf_glog(char *str, size_t size,
                                        const char *format, ...);
 #endif
 extern int GOOGLE_GLOG_DLL_DECL safe_vsnprintf(char *str, size_t size,
