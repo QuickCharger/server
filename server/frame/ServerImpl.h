@@ -56,9 +56,8 @@ public:
 		LOG(INFO) << "PROGRAM FINISH";
 		CloseLog();
 		CloseNet();
-		CLibevent::Close();
-
 		evconnlistener_free(m_pListener);
+		CLibevent::Close();
 	};
 
 	//void OnAccept(int a_nClientFD, short a_nEvent, void *a_pArg)

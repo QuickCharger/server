@@ -10,6 +10,7 @@
 #include "Libevent.h"
 #include "log.h"
 
+timeval GetTimeval(int a_sec, int a_usec = 0);
 
 template<typename T>
 class CTimer
@@ -80,7 +81,7 @@ public:
 			return 0;
 		}
 
-		evtimer_add(evListen, &getTimeval(sec, 0));
+		evtimer_add(evListen, &GetTimeval(sec));
 
 		DLOG(INFO) << "add Timer sec " << sec << "s" << ". ev " << evListen;
 
@@ -96,14 +97,6 @@ public:
 		evtimer_del(ev);
 		m_mTimer.erase(ev);
 		return true;
-	}
-
-	timeval getTimeval(int a_sec, int a_usec)
-	{
-		timeval tv;
-		tv.tv_sec = a_sec;
-		tv.tv_usec = a_usec;
-		return tv;
 	}
 
 private:

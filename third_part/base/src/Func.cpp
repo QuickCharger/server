@@ -19,11 +19,27 @@ namespace Func{
 		}
 	}
 
-	void SplitFilename(const string& a_StrFullFileName, const char * const a_pDelim, string& a_StrFilePath, string& a_StrFileName)
+	bool SplitFilename(const string& a_StrFullFileName, char a_Delim, string& a_StrFilePath, string& a_StrFileName)
 	{
-		std::size_t found = a_StrFullFileName.find_last_of(a_pDelim);
-		a_StrFilePath.assign(a_StrFullFileName.substr(0, found + 1));
-		a_StrFileName.assign(a_StrFullFileName.substr(found + 1));
+		std::size_t pos = a_StrFullFileName.find_last_of(a_Delim);
+		a_StrFilePath.assign(a_StrFullFileName.substr(0, pos + 1));
+		a_StrFileName.assign(a_StrFullFileName.substr(pos + 1));
+		return pos != string::npos;
+	}
+
+	std::string GetFileName(const std::string& a_strFullFileName)
+	{
+		std::string strFilePath;
+		std::string strFileName;
+		if (!SplitFilename(a_strFullFileName, '/', strFilePath, strFileName))
+		{
+			if (!SplitFilename(a_strFullFileName, '\\', strFilePath, strFileName))
+			{
+
+			}
+		}
+
+		return strFileName;
 	}
 
 	std::string Truncate(const std::string& a_strSource, const char a_ch)

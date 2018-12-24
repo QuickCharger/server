@@ -30,6 +30,9 @@ public:
 	void OnWriteCB(bufferevent *a_pBev, void *a_pArg);
 	void OnErrorCB(short a_nEvent);
 
+	void SetReadTimeout(int a_nSec);
+	void SetWriteTimeout(int a_nSec);
+
 	void Send(int a_nMsgCode, ::google::protobuf::Message &a_Msg);
 	void Send(int a_nMsgCode, ::google::protobuf::Message *a_pMsg);
 

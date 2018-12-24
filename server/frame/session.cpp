@@ -9,7 +9,17 @@
 #include "IServer.h"
 #include "Libevent.h"
 #include "log.h"
-//#include "ISessionSelector.h"
+#include "timer.h"
+
+/*
+* bufferevent_set_timeouts 测试结果如下
+*	主动连接[并发送数据]	被动连接		结果(触发OnErrorCB)
+*	无						读超时			不发数据时触发， 发送数据时不触发
+*	无						写超时			有无发送数据都不触发
+*	写超时					无				有无发送数据都不触发
+*	读超时					无				有无发送数据都触发
+* 结论 该函数的 读超时在规定时间内无数据可读时能正常触发， 写超不论怎么玩就是不触发
+*/
 
 CSession::CSession(IServer *a_pServer, evutil_socket_t a_Socket)
 {
@@ -22,7 +32,7 @@ CSession::CSession(IServer *a_pServer, evutil_socket_t a_Socket)
 
 CSession::~CSession()
 {
-	DLOG(INFO) << "~CSESSION";
+	LOG(INFO) << "~CSESSION";
 	Close();
 }
 
@@ -69,20 +79,7 @@ void CSession::OnReadCB(bufferevent *a_pBev, void *a_pArg)
 
 void CSession::OnWriteCB(bufferevent *a_pBev, void *a_pArg)
 {
-	//LOG(INFO) << "OnWriteCB";
-	//if (m_pSendBuffer->GetCurrentSize() != 0)
-	//{
-		//if (bufferevent_write(a_pBev, m_pSendBuffer->GetBuffer(), m_pSendBuffer->GetCurrentSize()) == 0)
-		//{
-		//	m_Server->OnWriteCB((void*)m_pSendBuffer->GetBuffer());
-		//	m_pSendBuffer->ClearBuffer();
-		//}
-		//else
-		//{
-		//	m_Server->OnWriteCB((void*)1);
-		//}
-	//}
-	//m_funcWriteCB((void*)(0));
+	// do nothing
 }
 
 /*
@@ -90,7 +87,7 @@ void CSession::OnWriteCB(bufferevent *a_pBev, void *a_pArg)
 */
 void CSession::OnErrorCB(short a_nEvent)
 {
-	DLOG(INFO) << "OnErrorCB, eventId " << a_nEvent;
+	LOG(INFO) << "OnErrorCB, eventId " << a_nEvent;
 	if (a_nEvent & BEV_EVENT_TIMEOUT)
 	{
 		DLOG(WARNING) << "BEV_EVENT_TIMEOUT";
@@ -109,6 +106,18 @@ void CSession::OnErrorCB(short a_nEvent)
 	}
 	m_Server->OnErrorCB(this);
 	delete this;
+}
+
+void CSession::SetReadTimeout(int a_nSec)
+{
+	DLOG(INFO) << "set read timeout. sec " << a_nSec;
+	bufferevent_set_timeouts(m_pEvent, &GetTimeval(a_nSec), nullptr);
+}
+
+void CSession::SetWriteTimeout(int a_nSec)
+{
+	DLOG(INFO) << "set write timeout. sec " << a_nSec;
+	bufferevent_set_timeouts(m_pEvent, nullptr, &GetTimeval(a_nSec));
 }
 
 void CSession::Send(int a_nMsgCode, ::google::protobuf::Message &a_Msg)

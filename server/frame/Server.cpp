@@ -4,15 +4,24 @@
 #include "log.h"
 #include "session.h"
 #include "NetProtocol/common/test.pb.h"
+#include "NetProtocol/common/messageCode.h"
 #include "NetProtocol/server/messageCode.h"
 
+/*
+* 被动链接
+* 直接创建session
+* 设定读触发, 规定时间到后还没数据执行CSession::OnErrorCB
+*/
 CServer::CServer(IServerImpl *a_pServerImpl, evutil_socket_t a_Socket)
 	//: IServer(/*a_pEventBase, new CSession(a_pEventBase)*/)
 	: m_ServerImpl(a_pServerImpl)
 {
 	m_pSession = new CSession(this, a_Socket);
+	LOG(INFO) << "Accept new socket. Desc " << Desc();
+	m_pSession->SetReadTimeout(30);
 }
 
+// 主动链接， 依靠Connect()
 CServer::CServer(IServerImpl *a_pServerImpl, const std::string& a_strIP, int a_nPort, bool a_bAutoConnect)
 	//: IServer()
 	: m_ServerImpl(a_pServerImpl)
@@ -34,7 +43,7 @@ void CServer::Connect()
 
 void CServer::OnReadCB(int a_nCode, const std::string& msg)
 {
-	//LOG(INFO) << "Client. OnReadCB";
+	DLOG(INFO) << "get msg, code " << a_nCode;
 
 	if (a_nCode == ServerMessageCode::eRegistServer)
 	{
@@ -87,10 +96,15 @@ void CServer::OnErrorCB(void* a_pArg)
 	}
 }
 
-//发送本服务的配置给连接上的服务器
+/*
+* 主动连接
+* 按时发心跳
+* 发送本服务的配置给连接上的服务器
+*/
 bool CServer::OnConnect()
 {
-	//CConfig *pConfig = CConfig::GetInstance();
+	LOG(INFO) << "Link to " << m_strServerIP.c_str() << ":" << m_nPort << " successful. Desc " << Desc();
+	AddTimer(10, this, &CServer::sendHeartBeat, nullptr, -1);
 	const CConfig *pConfig = CConfig::GetInstance();
 	std::string strServerName;
 	std::string strCode;
@@ -101,6 +115,7 @@ bool CServer::OnConnect()
 		msgCertification.set_name(strServerName);
 		msgCertification.set_code(strCode);
 		m_pSession->Send(ServerMessageCode::eRegistServer, msgCertification);
+
 		return true;
 	}
 	SetErr(pConfig->GetErr());
@@ -156,6 +171,9 @@ void CServer::Address(std::string& a_strIP, int& a_nPort)
 	a_strIP = "";
 	a_nPort = 0;
 
+	if (!m_pSession)
+		return;
+
 	const evutil_socket_t &socket = m_pSession->GetSocket();
 	struct sockaddr_in sa;
 	int len = sizeof(sa);
@@ -191,7 +209,7 @@ void CServer::doConnect(void *a_pArg)
 	addrSrv.sin_family = AF_INET;
 	addrSrv.sin_port = htons(m_nPort);
 	//bufferevent_socket_connect();		todo
-	DLOG(INFO) << "before connect";
+	//DLOG(INFO) << "before connect";
 	if (connect(fd, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR)) == 0)
 	{
 		DLOG(INFO) << "ConnectServer " << m_strServerIP << ":" << m_nPort << " success. Socket: " << fd;
@@ -208,5 +226,11 @@ void CServer::doConnect(void *a_pArg)
 			addConnectTimer();
 		}
 	}
-	DLOG(INFO) << "after connect";
+	//DLOG(INFO) << "after connect";
+}
+
+void CServer::sendHeartBeat(void* a_pArg)
+{
+	if(m_pSession)
+		m_pSession->Send(CommonMessageCode::eHeartBeat, nullptr);
 }
