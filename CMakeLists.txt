@@ -27,7 +27,7 @@ SET(LIBEVENT_LIB		libevent libevent_core libevent_extras)
 
 # PROTOBUF
 SET(PROTOBUF_INCLUDE	"${THIRDPATH}/protobuf-2.6.1/include")
-SET(PROTOBUF_LIB_PATH	"${THIRDPATH}/protobuf-2.6.1/lib//${ENV}")
+SET(PROTOBUF_LIB_PATH	"${THIRDPATH}/protobuf-2.6.1/lib/${ENV}")
 SET(PROTOBUF_LIB libprotobuf)
 
 # MYSQL
