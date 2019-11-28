@@ -27,7 +27,8 @@ SET(src
 	include/CFile.h		src/CFile.cpp
 	include/CTime.h		src/CTime.cpp
 	include/Func.h		src/Func.cpp
-	include/macro.h)
+	include/macro.h
+	include/utility.hpp)
 
 SET(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
