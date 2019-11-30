@@ -109,7 +109,7 @@ public:
 
 	virtual bool AcceptServerCB(CServer *a_pServer)
 	{
-		const std::string strServerName = a_pServer->GetServerName();
+		const std::string& strServerName = a_pServer->m_strServerName();
 		for (auto it = m_ServerType.begin(); it != m_ServerType.end(); ++it)
 		{
 			if (it->second == strServerName)

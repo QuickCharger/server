@@ -12,6 +12,7 @@
 //#include "netbase.h"
 #include "google/protobuf/message.h"
 #include "macro.h"
+#include "utility.hpp"
 #include "IServer.h"
 #include "base.h"
 
@@ -42,6 +43,8 @@ public:
 	void Address(std::string& a_strIP, int& a_nPort);
 	std::string Desc();
 
+	Property<std::string> m_strServerName;
+	Property<std::string> m_strServerIP;
 private:
 	void addConnectTimer();
 	void doConnect(void *a_pArg);
@@ -49,8 +52,8 @@ private:
 
 	DEFINE_TYPE_BASE(CSession*, m_pSession, nullptr, GetSession, SetSession);
 
-	DEFINE_TYPE_REFER(std::string, m_strServerName, "", GetServerName, SetServerName);
-	DEFINE_TYPE_REFER(std::string, m_strServerIP, "", GetServerIP, SetServerIP);
+	//DEFINE_TYPE_REFER(std::string, m_strServerName, "", GetServerName, SetServerName);
+	//DEFINE_TYPE_REFER(std::string, m_strServerIP, "", GetServerIP, SetServerIP);
 	DEFINE_TYPE_BASE(int, m_nPort, 0, GetSocket, SetSocket);
 	DEFINE_TYPE_BASE(bool, m_bAutoConnect, false, GetAutoConnect, SetAutoConnect);
 	DEFINE_TYPE_BASE(int, m_nAutoConnectTime, 2, GetAutoConnectTime, SetAutoConnectTime);

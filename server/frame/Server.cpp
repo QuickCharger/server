@@ -103,7 +103,7 @@ void CServer::OnErrorCB(void* a_pArg)
 */
 bool CServer::OnConnect()
 {
-	LOG(INFO) << "Link to " << m_strServerIP.c_str() << ":" << m_nPort << " successful. Desc " << Desc();
+	LOG(INFO) << "Link to " << m_strServerIP().c_str() << ":" << m_nPort << " successful. Desc " << Desc();
 	AddTimer(10, this, &CServer::sendHeartBeat, nullptr, -1);
 	const CConfig *pConfig = CConfig::GetInstance();
 	std::string strServerName;
@@ -205,21 +205,21 @@ void CServer::doConnect(void *a_pArg)
 	assert(m_pSession == 0);
 	evutil_socket_t fd = socket(AF_INET, SOCK_STREAM, 0);
 	SOCKADDR_IN addrSrv;
-	addrSrv.sin_addr.S_un.S_addr = inet_addr(m_strServerIP.c_str());
+	addrSrv.sin_addr.S_un.S_addr = inet_addr(m_strServerIP().c_str());
 	addrSrv.sin_family = AF_INET;
 	addrSrv.sin_port = htons(m_nPort);
 	//bufferevent_socket_connect();		todo
 	//DLOG(INFO) << "before connect";
 	if (connect(fd, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR)) == 0)
 	{
-		DLOG(INFO) << "ConnectServer " << m_strServerIP << ":" << m_nPort << " success. Socket: " << fd;
+		DLOG(INFO) << "ConnectServer " << m_strServerIP() << ":" << m_nPort << " success. Socket: " << fd;
 		//m_funcConnectCB();
 		m_pSession = new CSession(this, fd);
 		OnConnect();
 	}
 	else
 	{
-		DLOG(INFO) << "ConnectServer " << m_strServerIP << ":" << m_nPort << " failed. socket close. fd: " << fd;
+		DLOG(INFO) << "ConnectServer " << m_strServerIP() << ":" << m_nPort << " failed. socket close. fd: " << fd;
 		EVUTIL_CLOSESOCKET(fd);
 		if (m_bAutoConnect)
 		{
