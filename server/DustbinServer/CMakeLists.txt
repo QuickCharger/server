@@ -18,7 +18,7 @@ LINK_DIRECTORIES(
 )
 
 AUTO_FILES("." "src" "\\.(cc|cpp|h)$")
-AUTO_FILES("../frame" "src" "\\.(cc|cpp|h)$")
+AUTO_FILES("../frame" "src" "\\.(cc|cpp|h|hpp)$")
 AUTO_FILES("../NetProtocol" "src" "\\.(cc|cpp|h)$")
 
 ADD_EXECUTABLE(DustbinServer "${src}")

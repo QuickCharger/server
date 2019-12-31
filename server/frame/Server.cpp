@@ -1,5 +1,6 @@
 #include "Server.h"
-#include "config.h"
+//#include "config.h"
+#include "config.hpp"
 #include "Libevent.h"
 #include "log.h"
 #include "session.h"
@@ -25,8 +26,8 @@ CServer::CServer(IServerImpl *a_pServerImpl, evutil_socket_t a_Socket)
 CServer::CServer(IServerImpl *a_pServerImpl, const std::string& a_strIP, int a_nPort, bool a_bAutoConnect)
 	//: IServer()
 	: m_ServerImpl(a_pServerImpl)
-	, m_strServerIP(a_strIP)
-	, m_nPort(a_nPort)
+	, m_strConnectToIP(a_strIP)
+	, m_nConnectToPort(a_nPort)
 	, m_bAutoConnect(a_bAutoConnect)
 {
 }
@@ -103,12 +104,13 @@ void CServer::OnErrorCB(void* a_pArg)
 */
 bool CServer::OnConnect()
 {
-	LOG(INFO) << "Link to " << m_strServerIP().c_str() << ":" << m_nPort << " successful. Desc " << Desc();
+	LOG(INFO) << "Link to " << m_strConnectToIP.c_str() << ":" << m_nConnectToPort << " successful. Desc " << Desc();
 	AddTimer(10, this, &CServer::sendHeartBeat, nullptr, -1);
-	const CConfig *pConfig = CConfig::GetInstance();
 	std::string strServerName;
 	std::string strCode;
-	if (pConfig->GetValue("ServerName", strServerName) && pConfig->GetValue("SecretKey", strCode))
+	if (m_pConfig
+		&& m_pConfig->GetValue("ServerName", strServerName)
+		&& m_pConfig->GetValue("SecretKey", strCode))
 	{
 		Certification msgCertification;
 		msgCertification.set_type(Certification_TYPE_eServer);
@@ -118,7 +120,7 @@ bool CServer::OnConnect()
 
 		return true;
 	}
-	SetErr(pConfig->GetErr());
+	SetErr(m_pConfig ? m_pConfig->GetErr() : "config null");
 	return false;
 }
 
@@ -138,9 +140,11 @@ bool CServer::OnConnected(const std::string& a_msg)
 	if (certification.type() == Certification::eServer)
 	{
 		std::string strCode;
-		if (CConfig::GetInstance()->GetValue("SecretKey", strCode) && strCode == certification.code())
+		if (m_pConfig
+			&& m_pConfig->GetValue("SecretKey", strCode)
+			&& strCode == certification.code())
 		{
-			m_strServerName = certification.name();
+			certification.name();
 			if (!m_ServerImpl->AcceptServerCB(this))
 			{
 				// TODO
@@ -190,9 +194,7 @@ std::string CServer::Desc()
 	int port = 0;
 	Address(ip, port);
 
-	std::stringstream ss;
-	ss << "ip: " << ip << ":" << port;
-	return ss.str();
+	return std::string("ip: ") + ip + ":" + std::to_string(port);
 }
 
 void CServer::addConnectTimer()
@@ -205,21 +207,21 @@ void CServer::doConnect(void *a_pArg)
 	assert(m_pSession == 0);
 	evutil_socket_t fd = socket(AF_INET, SOCK_STREAM, 0);
 	SOCKADDR_IN addrSrv;
-	addrSrv.sin_addr.S_un.S_addr = inet_addr(m_strServerIP().c_str());
+	addrSrv.sin_addr.S_un.S_addr = inet_addr(m_strConnectToIP.c_str());
 	addrSrv.sin_family = AF_INET;
-	addrSrv.sin_port = htons(m_nPort);
+	addrSrv.sin_port = htons(m_nConnectToPort);
 	//bufferevent_socket_connect();		todo
 	//DLOG(INFO) << "before connect";
 	if (connect(fd, (SOCKADDR*)&addrSrv, sizeof(SOCKADDR)) == 0)
 	{
-		DLOG(INFO) << "ConnectServer " << m_strServerIP() << ":" << m_nPort << " success. Socket: " << fd;
+		DLOG(INFO) << "ConnectServer " << m_strConnectToIP.c_str() << ":" << m_nConnectToPort << " success. Socket: " << fd;
 		//m_funcConnectCB();
 		m_pSession = new CSession(this, fd);
 		OnConnect();
 	}
 	else
 	{
-		DLOG(INFO) << "ConnectServer " << m_strServerIP() << ":" << m_nPort << " failed. socket close. fd: " << fd;
+		DLOG(INFO) << "ConnectServer " << m_strConnectToIP.c_str() << ":" << m_nConnectToPort << " failed. socket close. fd: " << fd;
 		EVUTIL_CLOSESOCKET(fd);
 		if (m_bAutoConnect)
 		{

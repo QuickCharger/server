@@ -14,7 +14,7 @@ LINK_DIRECTORIES(${LIBEVENT_LIB_PATH}
 
 AUTO_FILES("." "src" "\\.(cc|cpp|h)$")
 AUTO_FILES("../base" "src" "\\.(cc|cpp|h)$")
-AUTO_FILES("../frame" "src" "\\.(cc|cpp|h)$")
+AUTO_FILES("../frame" "src" "\\.(cc|cpp|h|hpp)$")
 AUTO_FILES("../NetProtocol" "src" "\\.(cc|cpp|h)$")
 #AUTO_FILES("../NetProtocol/server" "src" "\\.(cc|cpp|h)$")
 #AUTO_FILES("../NetProtocol/common" "src" "\\.(cc|cpp|h)$")

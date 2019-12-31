@@ -5,7 +5,8 @@
 
 #include <signal.h>
 
-#include "Config.h"
+//#include "Config.h"
+#include "Config.hpp"
 #include "Libevent.h"
 #include "net.h"
 #include "Server.h"
@@ -24,7 +25,10 @@ enum EServerType
 };
 
 template<typename T>
-class CServerImpl : public IServerImpl, public CMessageDispatch, public CErrRecord, public CTimer<T>
+class CServerImpl : public IServerImpl
+				, public CMessageDispatch
+				, public CErrRecord
+				, public CTimer<T>
 {
 public:
 
@@ -80,7 +84,7 @@ public:
 
 	void LinkToServer(void* a_pArg)
 	{
-		std::vector<std::pair<std::string, int>> serverCfg = CConfig::GetInstance()->GetServerList();
+		std::vector<std::pair<std::string, int>> serverCfg = m_pConfig->GetServerList();
 		for (auto it = serverCfg.begin(); it != serverCfg.end(); ++it)
 		{
 			//主动连接其他服务器
@@ -135,13 +139,18 @@ private:
 
 	void initConfig(char *pCh)
 	{
-		CConfig* config = CConfig::GetInstance();
-		if (!config->InitConfig(pCh))
+		//m_pConfig = new (std::nothrow) CConfig;
+		if (!(m_pConfig = new (std::nothrow) CConfig))
 		{
-			LOG(ERROR) << config->GetErr();
+			LOG(ERROR) << "new Config failed !!!";
 			exit(1);
 		}
-		config->GetValue("Port", m_nPort);
+		if (!m_pConfig->InitConfig(pCh))
+		{
+			LOG(ERROR) << m_pConfig->GetErr();
+			exit(1);
+		}
+		m_pConfig->GetValue("Port", m_nPort);
 	}
 
 	void initSignal()
@@ -196,10 +205,12 @@ private:
 	}
 
 private:
-	int m_nPort = 0;
-	evutil_socket_t m_Socket;
+	int				m_nPort = 0;
+	evutil_socket_t	m_Socket;
 	evconnlistener* m_pListener = nullptr;
-	event* signal_event = nullptr;
+	event*		signal_event = nullptr;
+
+	CConfig*	m_pConfig = nullptr;
 
 	std::map<EServerType, const char*> m_ServerType;
 	std::map<EServerType, std::set<CServer*>> m_Server;

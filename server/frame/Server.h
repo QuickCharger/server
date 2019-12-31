@@ -19,6 +19,8 @@
 #include "IServerImpl.h"
 #include "timer.h"
 
+class CConfig;
+
 class CServer : public IServer, public CErrRecord ,public CTimer<CServer>
 {
 public:
@@ -44,7 +46,7 @@ public:
 	std::string Desc();
 
 	Property<std::string> m_strServerName;
-	Property<std::string> m_strServerIP;
+	//Property<std::string> m_strServerIP;
 private:
 	void addConnectTimer();
 	void doConnect(void *a_pArg);
@@ -54,11 +56,15 @@ private:
 
 	//DEFINE_TYPE_REFER(std::string, m_strServerName, "", GetServerName, SetServerName);
 	//DEFINE_TYPE_REFER(std::string, m_strServerIP, "", GetServerIP, SetServerIP);
-	DEFINE_TYPE_BASE(int, m_nPort, 0, GetSocket, SetSocket);
 	DEFINE_TYPE_BASE(bool, m_bAutoConnect, false, GetAutoConnect, SetAutoConnect);
 	DEFINE_TYPE_BASE(int, m_nAutoConnectTime, 2, GetAutoConnectTime, SetAutoConnectTime);
 
-	IServerImpl *m_ServerImpl = nullptr;
+
+	CConfig*	m_pConfig = nullptr;
+	IServerImpl*m_ServerImpl = nullptr;
+	std::string	m_strConnectToIP = "127.0.0.1";
+	int			m_nConnectToPort = 0;
+
 
 	typedef void(IServerImpl::*Func)(CServer* m_pServer, int, const std::string&);
 	Func m_funcOnMessageCB = nullptr;
