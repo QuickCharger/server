@@ -1,9 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR)
 PROJECT(Server CXX)
 
-# IMPORT FUNCTION
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
-
 SET(THIRDPATH ${CMAKE_SOURCE_DIR}/third_part)
 
 # LIBEVENT
@@ -44,12 +41,13 @@ LINK_DIRECTORIES(
 	${LIBEVENT_LIB_PATH} 
 )
 
-ADD_EXECUTABLE(servertest 
-	"./src/main.cpp"
-	"./src/common.cpp"
-	"./src/Libevent.cpp"
-	"./src/Session.cpp"
-	)
+file(GLOB_RECURSE SOURCES
+	"${CMAKE_SOURCE_DIR}/src/*.h"
+	"${CMAKE_SOURCE_DIR}/src/*.cpp"
+	"${CMAKE_SOURCE_DIR}/src/*.cc"
+)
+
+ADD_EXECUTABLE(servertest ${SOURCES})
 
 target_link_libraries(servertest
 	${LIBEVENT_LIB}
