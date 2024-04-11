@@ -1,0 +1,67 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR)
+PROJECT(Server CXX)
+
+# IMPORT FUNCTION
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
+include(AddTarget)
+include(AutoFiles)
+
+SET(THIRDPATH ${CMAKE_SOURCE_DIR}/third_part)
+
+# LIBEVENT
+IF(WIN32)
+	SET(LIBEVENTBIN "${CMAKE_SOURCE_DIR}/libevent-2.1.12-stable/bin")
+	SET(LIBEVENT_INCLUDE	"${CMAKE_SOURCE_DIR}/libevent-2.1.12-stable/include" "${CMAKE_SOURCE_DIR}/libevent-2.1.12-stable/WIN32-Code/nmake")
+	SET(LIBEVENT_LIB_PATH	"${CMAKE_SOURCE_DIR}/libevent-2.1.12-stable/sln/lib/Debug")
+	SET(LIBEVENT_LIB		"event" "event_core" "event_extra")
+ELSEIF(UNIX AND NOT APPLE)
+	SET(LIBEVENTBIN "${CMAKE_SOURCE_DIR}/libevent-2.1.12-stable/bin")
+	SET(LIBEVENT_INCLUDE	"${LIBEVENTBIN}/include")
+	SET(LIBEVENT_LIB_PATH	"${LIBEVENTBIN}/lib")
+	SET(LIBEVENT_LIB		"event" "event_core" "event_extra" "event_pthreads")
+ENDIF()
+
+# EXTRA
+IF(WIN32)
+	SET(EXTRA_INCLUDE	"")
+	SET(EXTRA_LIB_PATH	"")
+	SET(EXTRA_LIB		"ws2_32.lib" "wsock32.lib")
+ELSEIF(UNIX AND NOT APPLE)
+	SET(EXTRA_INCLUDE	"")
+	SET(EXTRA_LIB_PATH	"")
+	SET(EXTRA_LIB		"pthread")
+ENDIF()
+
+
+IF(WIN32)
+	add_definitions(-D_UNICODE -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS)
+ENDIF()
+
+
+INCLUDE_DIRECTORIES(
+	${CMAKE_SOURCE_DIR}/../src
+	${LIBEVENT_INCLUDE} 
+)
+
+LINK_DIRECTORIES(
+	${LIBEVENT_LIB_PATH} 
+)
+
+AUTO_FILES("." "src" "\\.(cc|cpp|h)$")
+
+ADD_EXECUTABLE(servertest 
+	"./src/main.cpp"
+	"./src/common.cpp"
+	"./src/Libevent.cpp"
+	"./src/Session.cpp"
+	)
+
+target_link_libraries(servertest
+	${LIBEVENT_LIB}
+	${EXTRA_LIB}
+)
+
+SET_TARGET_PROPERTIES(servertest PROPERTIES 
+	RUNTIME_OUTPUT_DIRECTORY_DEBUG ${PROJECT_SOURCE_DIR}/bin
+	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin
+)
