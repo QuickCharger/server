@@ -1,1 +1,1 @@
-cmake -G "Visual Studio 14" -DEVENT__DISABLE_OPENSSL=ON  ..
+cmake -G "Visual Studio 14 2015" -DEVENT__DISABLE_OPENSSL=ON -DCMAKE_INSTALL_PREFIX=../bin .. && cmake --build . --target install --clean-first --config Debug

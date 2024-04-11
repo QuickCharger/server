@@ -3,19 +3,16 @@ PROJECT(Server CXX)
 
 # IMPORT FUNCTION
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
-include(AddTarget)
-include(AutoFiles)
 
 SET(THIRDPATH ${CMAKE_SOURCE_DIR}/third_part)
 
 # LIBEVENT
+SET(LIBEVENTBIN "${CMAKE_SOURCE_DIR}/libevent-2.1.12-stable/bin")
 IF(WIN32)
-	SET(LIBEVENTBIN "${CMAKE_SOURCE_DIR}/libevent-2.1.12-stable/bin")
-	SET(LIBEVENT_INCLUDE	"${CMAKE_SOURCE_DIR}/libevent-2.1.12-stable/include" "${CMAKE_SOURCE_DIR}/libevent-2.1.12-stable/WIN32-Code/nmake")
-	SET(LIBEVENT_LIB_PATH	"${CMAKE_SOURCE_DIR}/libevent-2.1.12-stable/sln/lib/Debug")
+	SET(LIBEVENT_INCLUDE	"${LIBEVENTBIN}/include")
+	SET(LIBEVENT_LIB_PATH	"${LIBEVENTBIN}/lib")
 	SET(LIBEVENT_LIB		"event" "event_core" "event_extra")
 ELSEIF(UNIX AND NOT APPLE)
-	SET(LIBEVENTBIN "${CMAKE_SOURCE_DIR}/libevent-2.1.12-stable/bin")
 	SET(LIBEVENT_INCLUDE	"${LIBEVENTBIN}/include")
 	SET(LIBEVENT_LIB_PATH	"${LIBEVENTBIN}/lib")
 	SET(LIBEVENT_LIB		"event" "event_core" "event_extra" "event_pthreads")
@@ -46,8 +43,6 @@ INCLUDE_DIRECTORIES(
 LINK_DIRECTORIES(
 	${LIBEVENT_LIB_PATH} 
 )
-
-AUTO_FILES("." "src" "\\.(cc|cpp|h)$")
 
 ADD_EXECUTABLE(servertest 
 	"./src/main.cpp"
