@@ -1,0 +1,22 @@
+message test
+{
+	required int32 result = 1;
+	required string str =2;
+}
+
+message Certification
+{
+	enum TYPE
+	{
+		eServer = 1;
+		eClient = 2;
+	}
+
+	required TYPE   type = 1;
+	required string name = 2;
+	required string code = 3;
+}
+
+message MessageBlank
+{
+}
