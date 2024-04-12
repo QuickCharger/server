@@ -1,11 +1,5 @@
 #pragma once
 
-#include <event2/listener.h>
-#include <event2/bufferevent.h>
-#include <event2/buffer.h>
-#include <event2/bufferevent_struct.h>
-
-
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -15,6 +9,15 @@
 #include <deque>
 #include <mutex>
 #include <list>
+#include <vector>
+#include <assert.h>
+
+#include <event2/listener.h>
+#include <event2/bufferevent.h>
+#include <event2/buffer.h>
+#include <event2/bufferevent_struct.h>
+
+#include "common.h"
 
 /*
   ÍøÂçÊÂ¼þ¿â
@@ -27,14 +30,9 @@
 */
 
 namespace LIBEVENT {
-	enum class Event {
-		SocketCreate = 1,
-		DataIn,
-		SocketErr,
-		Close,
-	};
-	extern std::mutex mtxEventsOUT;
-	extern std::list<std::tuple<int, Event, void*, int>> eventsOUT;
+
+	//extern std::mutex mtxEventsOUT;
+	//extern std::list<std::tuple<int, Event, void*, int>> eventsOUT;
 
 	//extern std::mutex mtxEventsIN;
 	//extern std::list<std::tuple<Event>> eventsIN;

@@ -5,71 +5,58 @@
 #include "Session.h"
 #include "common.h"
 
-/*
-宕机
-event.c L3248
-win32select.c L265
-*/
 void consumer() {
+
+	std::vector<EventStruct>* pEventRead = nullptr;
+	std::vector<EventStruct>* pEventWrite = nullptr;
+
 	while (true) {
+		pEventRead = eventsRead.Comsumer(pEventRead);
+		pEventWrite = eventsWrite.Productor(pEventWrite);
 		// 处理net
+		// event处理不了无所谓 可以先执行内部的事件循环
 		{
-			std::unique_lock<std::mutex> lck(LIBEVENT::mtxEventsOUT);
+			for (auto it = pEventRead->begin(); it != pEventRead->end(); ++it) {
+				if (it->e == Event::SocketCreate) {
+					Session_New(it->fd, (bufferevent*)it->p1);
+				} else if (it->e == Event::DataIn) {
+					Session_Append(it->fd, (char*)it->p1, it->i1);
+				} else if (it->e == Event::SocketErr) {
+					Session_Destroy(it->fd);
+				}
+			}
+			pEventRead->clear();
+			//std::unique_lock<std::mutex> lck(LIBEVENT::mtxEventsOUT);
 			//std::unique_lock<std::mutex> lck(LIBEVENT::mtxEventsOUT, std::try_to_lock);
 			//if (lck.owns_lock()) 
-			{
-				// A
-				//if (LIBEVENT::eventsOUT.size()) {
-				//	std::cout << "for begin" << std::endl;
-				//	for (auto &it : LIBEVENT::eventsOUT) {
-				//		std::tuple<int, LIBEVENT::Event, void*, int> d = it;
-				//		int fd = std::get<0>(d);
-				//		LIBEVENT::Event e = std::get<1>(d);
-				//		void* ch = std::get<2>(d);
-				//		int len = std::get<3>(d);
-				//		std::cout << fd << " " << (int)e << " " << ch << " " << len << " " << std::endl;
-				//	}
-				//	std::cout << "for end" << std::endl;
-				//}
-
-				// B 
-				// 不留AC留B 会崩溃
-				for (auto &it : LIBEVENT::eventsOUT) {
-					int fd = std::get<0>(it);
-					LIBEVENT::Event e = std::get<1>(it);
-					void* ch = std::get<2>(it);
-					int len = std::get<3>(it);
-					if (e == LIBEVENT::Event::SocketCreate) {
-						Session_New(len, (bufferevent*)ch);
-					}
-					else if (e == LIBEVENT::Event::DataIn) {
-						Session_Append(fd, (char*)ch, len);
-					}
-					else if (e == LIBEVENT::Event::SocketErr) {
-						Session_Destroy(fd);
-					}
-				}
-				LIBEVENT::eventsOUT.clear();
-
-				//{
-				//	static int c = 0;
-				//	++c;
-				//	if (c % 100 == 0) {
-				//		std::cout << "Sessions size " << Sessions.size() << std::endl;
-				//	}
-				//}
-			}
+			//{
+			//	for (auto &it : LIBEVENT::eventsOUT) {
+			//		int fd = std::get<0>(it);
+			//		LIBEVENT::Event e = std::get<1>(it);
+			//		void* ch = std::get<2>(it);
+			//		int len = std::get<3>(it);
+			//		if (e == LIBEVENT::Event::SocketCreate) {
+			//			Session_New(len, (bufferevent*)ch);
+			//		}
+			//		else if (e == LIBEVENT::Event::DataIn) {
+			//			Session_Append(fd, (char*)ch, len);
+			//		}
+			//		else if (e == LIBEVENT::Event::SocketErr) {
+			//			Session_Destroy(fd);
+			//		}
+			//	}
+			//	LIBEVENT::eventsOUT.clear();
+			//}
 		}
 
 		// 处理该线程逻辑
 		{
 			// 处理个虚假的逻辑
-			// 如果session本身有数据 则desc 并把数据返回给fd
 			for (auto &it : Sessions) {
 				it.second->FakeNews();
 			}
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 }
 

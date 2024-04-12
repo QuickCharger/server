@@ -111,7 +111,7 @@ void Session::Desc() {
 
 void Session::FakeNews() {
 	if (m_ch) {
-		Send(m_ch, m_len -1);
+		Send(m_ch, m_len);
 		delete m_ch;
 		m_ch = nullptr;
 		m_len = 0;

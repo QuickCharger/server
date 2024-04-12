@@ -20,8 +20,13 @@ int cTotal = 0;
 int cLiving = 0;
 namespace LIBEVENT {
 	struct event_base *base = nullptr;
-	std::mutex mtxEventsOUT;
-	std::list<std::tuple<int, Event, void*, int>> eventsOUT;
+	std::vector<EventStruct>* pEventRead = nullptr;
+	std::vector<EventStruct>* pEventWrite = nullptr;
+
+	void onTimer1ms(evutil_socket_t, short, void *) {
+		pEventRead = eventsRead.Productor(pEventRead);
+		pEventWrite = eventsWrite.Comsumer(pEventWrite);
+	}
 
 	void onTimer1s(evutil_socket_t, short, void *) {
 		{
@@ -56,6 +61,9 @@ namespace LIBEVENT {
 		}
 #endif
 
+		pEventRead = eventsRead.Productor(pEventRead);
+		pEventWrite = eventsWrite.Comsumer(pEventWrite);
+
 #ifdef WIN32
 		evthread_use_windows_threads();
 #else
@@ -70,9 +78,16 @@ namespace LIBEVENT {
 			return -2;
 		}
 
-		struct timeval one_ms_delay = { 1, 0 };
-		struct event *timeout_event = event_new(base, -1, EV_PERSIST, onTimer1s, nullptr);
-		event_add(timeout_event, &one_ms_delay);
+		{
+			struct timeval one_ms_delay = { 0, 1 };
+			struct event *timeout_event = event_new(base, -1, EV_PERSIST, onTimer1ms, nullptr);
+			event_add(timeout_event, &one_ms_delay);
+		}
+		{
+			struct timeval one_ms_delay = { 1, 0 };
+			struct event *timeout_event = event_new(base, -1, EV_PERSIST, onTimer1s, nullptr);
+			event_add(timeout_event, &one_ms_delay);
+		}
 
 		return 0;
 	}
@@ -84,14 +99,11 @@ namespace LIBEVENT {
 		struct evbuffer *input = bufferevent_get_input(bev);
 		struct evbuffer *output = bufferevent_get_output(bev);
 
-		//evbuffer_add_buffer(output, input);
-		//return;
-
 		size_t len = evbuffer_get_length(input);
-		char *ch = new char[len + 1]{ 0 };
+		char *ch = new char[len]{ 0 };
 
-		SocketInfo *info = (SocketInfo*)ctx;
-		info->total_drained += len;
+		//SocketInfo *info = (SocketInfo*)ctx;
+		//info->total_drained += len;
 
 		{
 			//std::unique_lock<std::mutex> lck(ioMtx);
@@ -99,10 +111,12 @@ namespace LIBEVENT {
 		}
 		evbuffer_copyout(input, ch, len);
 
-		{
-			std::unique_lock<std::mutex> lck(mtxEventsOUT);
-			eventsOUT.push_back(std::make_tuple(fd, Event::DataIn, ch, len+1));
-		}
+		EventStruct e;
+		e.fd = fd;
+		e.e = Event::DataIn;
+		e.p1 = ch;
+		e.i1 = len;
+		pEventRead->push_back(std::move(e));
 	}
 
 	static void socket_event_cb(struct bufferevent *bev, short a_events, void *ctx)
@@ -111,10 +125,16 @@ namespace LIBEVENT {
 		// a_events 处理的不完善 没有处理所有的情况
 
 		evutil_socket_t fd = bufferevent_getfd(bev);
-		{
-			std::unique_lock<std::mutex> lck(mtxEventsOUT);
-			eventsOUT.push_back(std::make_tuple(fd, Event::SocketErr, nullptr, 0));
-		}
+		//{
+		//	std::unique_lock<std::mutex> lck(mtxEventsOUT);
+		//	eventsOUT.push_back(std::make_tuple(fd, Event::SocketErr, nullptr, 0));
+		//}
+
+
+		EventStruct e;
+		e.fd = fd;
+		e.e = Event::SocketErr;
+		pEventRead->push_back(std::move(e));
 
 		struct SocketInfo *inf = (SocketInfo*)ctx;
 		struct evbuffer *input = bufferevent_get_input(bev);
@@ -170,9 +190,16 @@ namespace LIBEVENT {
 		bufferevent_setcb(bev, socket_read_cb, NULL, socket_event_cb, info1);
 		bufferevent_enable(bev, EV_READ | EV_WRITE);
 
+		//{
+		//	std::unique_lock<std::mutex> lck(mtxEventsOUT);
+		//	eventsOUT.push_back(std::make_tuple(fd, Event::SocketCreate, bev, fd));
+		//}
 		{
-			std::unique_lock<std::mutex> lck(mtxEventsOUT);
-			eventsOUT.push_back(std::make_tuple(fd, Event::SocketCreate, bev, fd));
+			EventStruct e;
+			e.fd = fd;
+			e.e = Event::SocketCreate;
+			e.p1 = bev;
+			pEventRead->push_back(std::move(e)); 
 		}
 
 		cTotal++;
