@@ -2,22 +2,13 @@
 #include "mutex"
 #include "common.h"
 #include "event2/thread.h"
+#include "map"
 
-struct SocketInfo {
-	SocketInfo(int a_name) {
-		name = new char[10];
-		memset(name, 0, sizeof(name));
-		std::sprintf(name, "%d", a_name);
-	}
-	~SocketInfo() {
-		delete name;
-	}
-	char *name = nullptr;
-	size_t total_drained = 0;
-};
+int uid = 0;
 
 int cTotal = 0;
 int cLiving = 0;
+
 namespace LIBEVENT {
 	struct event_base *base = nullptr;
 	std::vector<EventStruct>* pEventRead = nullptr;
@@ -98,6 +89,7 @@ namespace LIBEVENT {
 		evutil_socket_t fd = bufferevent_getfd(bev);
 		struct evbuffer *input = bufferevent_get_input(bev);
 		struct evbuffer *output = bufferevent_get_output(bev);
+		//evbuffer_add_buffer(output, input);
 
 		size_t len = evbuffer_get_length(input);
 		char *ch = new char[len]{ 0 };
@@ -109,10 +101,11 @@ namespace LIBEVENT {
 			//std::unique_lock<std::mutex> lck(ioMtx);
 			//std::cout << "libevent fd " << fd << " data in len" << len << std::endl;
 		}
-		evbuffer_copyout(input, ch, len);
+		//evbuffer_copyout(input, ch, len);
+		evbuffer_remove(input, ch, len);
 
 		EventStruct e;
-		e.fd = fd;
+		e.bev = bev;
 		e.e = Event::DataIn;
 		e.p1 = ch;
 		e.i1 = len;
@@ -124,7 +117,7 @@ namespace LIBEVENT {
 		// todo
 		// a_events 处理的不完善 没有处理所有的情况
 
-		evutil_socket_t fd = bufferevent_getfd(bev);
+		//evutil_socket_t fd = bufferevent_getfd(bev);
 		//{
 		//	std::unique_lock<std::mutex> lck(mtxEventsOUT);
 		//	eventsOUT.push_back(std::make_tuple(fd, Event::SocketErr, nullptr, 0));
@@ -132,8 +125,9 @@ namespace LIBEVENT {
 
 
 		EventStruct e;
-		e.fd = fd;
+		e.bev = bev;
 		e.e = Event::SocketErr;
+		e.p1 = bev;
 		pEventRead->push_back(std::move(e));
 
 		struct SocketInfo *inf = (SocketInfo*)ctx;
@@ -151,17 +145,16 @@ namespace LIBEVENT {
 		if (a_events & BEV_EVENT_ERROR) {
 			{
 				std::unique_lock<std::mutex> lck(ioMtx);
-				std::cout << "Got " << a_events<< " error from " << inf->name << " : " << evutil_socket_error_to_string(EVUTIL_SOCKET_ERROR()) << std::endl;
+				//std::cout << "Got " << a_events<< " error from " << inf->name << " : " << evutil_socket_error_to_string(EVUTIL_SOCKET_ERROR()) << std::endl;
 			}
 			finished = 1;
 		}
 		finished = 1;
 
-		if (finished) {
-
-			delete inf;
-			bufferevent_free(bev);
-		}
+		bufferevent_disable(bev, EV_READ | EV_WRITE);
+		//if (finished) {
+		//	bufferevent_free(bev);
+		//}
 
 		cLiving--;
 		//{
@@ -182,12 +175,12 @@ namespace LIBEVENT {
 
 		// bev在session有引用
 		// 如果不提前incref 可能会出现session创建前bev就销毁 会崩溃
-		bufferevent_incref(bev);
+		//bufferevent_incref(bev);
 
-		SocketInfo *info1 = nullptr;
-		info1 = new SocketInfo(cTotal);
+		SocketInfo *info = new SocketInfo;
+		info->uid = ++uid;
 
-		bufferevent_setcb(bev, socket_read_cb, NULL, socket_event_cb, info1);
+		bufferevent_setcb(bev, socket_read_cb, NULL, socket_event_cb, info);
 		bufferevent_enable(bev, EV_READ | EV_WRITE);
 
 		//{
@@ -196,7 +189,7 @@ namespace LIBEVENT {
 		//}
 		{
 			EventStruct e;
-			e.fd = fd;
+			e.bev = bev;
 			e.e = Event::SocketCreate;
 			e.p1 = bev;
 			pEventRead->push_back(std::move(e)); 

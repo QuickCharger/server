@@ -22,12 +22,15 @@
 /*
   网络事件库
     events是libevent生成的事件 需要锁上读取
-    Event
-      DataIn 有数据输入
-	  SocketErr socket需要关闭
   AUTHOR
     2024/04/07 BDG INIT
 */
+
+
+struct SocketInfo {
+	int uid = 0;
+};
+
 
 namespace LIBEVENT {
 	int Init();

@@ -10,19 +10,25 @@ void signal_handler(int signal) {
 	exit(0);
 }
 
-class C {
-public:
-	void cb() {
-		std::cout << "cb" << std::endl;
-	}
-};
+//class C {
+//public:
+//	void cb() {
+//		std::cout << "cb" << std::endl;
+//	}
+//};
 
 int main(int argc, char **argv)
 {
-	C c;
-	typedef void (*pfunc)();
-	std::function<void(void)> pf = std::bind(&C::cb, &c);
-	pf();
+	//C c;
+	//typedef void (*pfunc)();
+	//std::function<void(void)> pf = std::bind(&C::cb, &c);
+	//pf();
+
+	//int *pch = new int[10000 * 100];
+	//for (int i = 0; i < 10000 * 100; ++i) {
+	//	pch[i] = i;
+	//}
+
 	std::signal(SIGINT, signal_handler);   // Ctrl+C
 	std::signal(SIGTERM, signal_handler);  // kill
 

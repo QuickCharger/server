@@ -5,6 +5,7 @@
 #include "Session.h"
 #include "common.h"
 #include "Work.h"
+#include "Client.h"
 
 Work *work = new Work;
 
@@ -21,13 +22,15 @@ void Work::Run() {
 		// ´¦Àínet
 		for (auto it = pEventRead->begin(); it != pEventRead->end(); ++it) {
 			if (it->e == Event::SocketCreate) {
-				Session_New(it->fd, (bufferevent*)it->p1);
+				Client::CreateClient((bufferevent*)it->p1);
 			}
 			else if (it->e == Event::DataIn) {
-				Session_Append(it->fd, (char*)it->p1, it->i1);
+				int uid = ((SocketInfo*)it->bev->cbarg)->uid;
+				gClients[uid]->OnMsg(it->p1, it->i1);
+				delete (char*)it->p1;
 			}
 			else if (it->e == Event::SocketErr) {
-				Session_Destroy(it->fd);
+				Client::DestroyClient((bufferevent*)it->p1);
 			}
 		}
 		pEventRead->clear();

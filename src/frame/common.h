@@ -13,7 +13,9 @@ enum class Event {
 	Close,
 };
 
+struct bufferevent;
 struct EventStruct {
+	bufferevent* bev = nullptr;
 	void* p1 = nullptr;
 	void* p2 = nullptr;
 	int fd = 0;
