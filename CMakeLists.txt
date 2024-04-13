@@ -1,9 +1,10 @@
-ÔªøCMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.10 FATAL_ERROR)
 
 PROJECT(Server CXX)
 
-# CMAKE_SOURCE_DIR È°∂Â±Çcmake
+# CMAKE_SOURCE_DIR ∂•≤„cmake
 # CMAKE_BINARY_DIR sln
+# PROJECT_SOURCE_DIR Projectœ¬µƒ∂•≤„cmake
 
 ADD_SUBDIRECTORY(third_part/libevent)
 
@@ -58,14 +59,24 @@ target_link_libraries(server
 )
 
 SET_TARGET_PROPERTIES(server PROPERTIES 
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin
 	RUNTIME_OUTPUT_DIRECTORY_DEBUG ${PROJECT_SOURCE_DIR}/bin
 	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin
 )
 
-# Âú®buildÂÆåÊàêÂêé
-# Â§çÂà∂ÂøÖË¶ÅÁöÑÂä®ÊÄÅÂ∫ì
-add_custom_command(TARGET server POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${LIBEVENTBIN}/lib/event.dll" "${PROJECT_SOURCE_DIR}/bin/"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${LIBEVENTBIN}/lib/event_core.dll" "${PROJECT_SOURCE_DIR}/bin/"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${LIBEVENTBIN}/lib/event_extra.dll" "${PROJECT_SOURCE_DIR}/bin/"
-)
+# ‘⁄buildÕÍ≥…∫Û
+# ∏¥÷∆±ÿ“™µƒ∂ØÃ¨ø‚
+IF(WIN32)
+    add_custom_command(TARGET server POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${LIBEVENTBIN}/lib/event.dll" "${PROJECT_SOURCE_DIR}/bin/"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${LIBEVENTBIN}/lib/event_core.dll" "${PROJECT_SOURCE_DIR}/bin/"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${LIBEVENTBIN}/lib/event_extra.dll" "${PROJECT_SOURCE_DIR}/bin/"
+    )
+ELSEIF(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_custom_command(TARGET server POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${LIBEVENTBIN}/lib/libevent-2.1.so.7.0.1" "${PROJECT_SOURCE_DIR}/bin/libevent-2.1.so"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${LIBEVENTBIN}/lib/libevent_core-2.1.so.7.0.1" "${PROJECT_SOURCE_DIR}/bin/libevent_core-2.1.so"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${LIBEVENTBIN}/lib/libevent_extra-2.1.so.7.0.1" "${PROJECT_SOURCE_DIR}/bin/libevent_extra-2.1.so"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${LIBEVENTBIN}/lib/libevent_pthreads-2.1.so.7.0.1" "${PROJECT_SOURCE_DIR}/bin/libevent_pthreads-2.1.so.7.0.1"
+    )
+ENDIF()
