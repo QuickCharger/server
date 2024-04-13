@@ -6,4 +6,4 @@
 win + cygwin
   mkdir sln && cd sln && cmake .. && cmake --build . --clean-first --config Release
 linux
-  mkdir sln && cd sln && cmake .. && make
+  mkdir sln && cd sln && cmake .. && cmake --build . --clean-first --config Release
