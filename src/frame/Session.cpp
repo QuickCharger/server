@@ -12,7 +12,6 @@ void Session_New(int fd, bufferevent* ev) {
 	Session *s = new Session(fd, ev);
 	assert(Sessions.find(fd) == Sessions.end());
 	Sessions[fd] = s;
-
 }
 
 void Session_Destroy(int fd) {

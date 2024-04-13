@@ -30,13 +30,6 @@
 */
 
 namespace LIBEVENT {
-
-	//extern std::mutex mtxEventsOUT;
-	//extern std::list<std::tuple<int, Event, void*, int>> eventsOUT;
-
-	//extern std::mutex mtxEventsIN;
-	//extern std::list<std::tuple<Event>> eventsIN;
-
 	int Init();
 	int Listen(int port);
 	int Connect(char* ip, int port);

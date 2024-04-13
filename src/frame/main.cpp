@@ -26,27 +26,6 @@ void consumer() {
 				}
 			}
 			pEventRead->clear();
-			//std::unique_lock<std::mutex> lck(LIBEVENT::mtxEventsOUT);
-			//std::unique_lock<std::mutex> lck(LIBEVENT::mtxEventsOUT, std::try_to_lock);
-			//if (lck.owns_lock()) 
-			//{
-			//	for (auto &it : LIBEVENT::eventsOUT) {
-			//		int fd = std::get<0>(it);
-			//		LIBEVENT::Event e = std::get<1>(it);
-			//		void* ch = std::get<2>(it);
-			//		int len = std::get<3>(it);
-			//		if (e == LIBEVENT::Event::SocketCreate) {
-			//			Session_New(len, (bufferevent*)ch);
-			//		}
-			//		else if (e == LIBEVENT::Event::DataIn) {
-			//			Session_Append(fd, (char*)ch, len);
-			//		}
-			//		else if (e == LIBEVENT::Event::SocketErr) {
-			//			Session_Destroy(fd);
-			//		}
-			//	}
-			//	LIBEVENT::eventsOUT.clear();
-			//}
 		}
 
 		// 处理该线程逻辑
