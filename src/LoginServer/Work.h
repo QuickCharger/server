@@ -1,14 +1,23 @@
 #pragma  once
 
-class Work
+#include "./frame/common.h"
+#include "./frame/IRunnable.cc"
+#include "./frame/ProductConsume.cc"
+
+class Work : IRunnable
 {
 public:
-	void Init();
-	void Run();
+	Work();
+	~Work();
+	int Init();
+	int Run();
+	int Stop();
 
 private:
-	std::vector<EventStruct>* pEventRead = nullptr;
-	std::vector<EventStruct>* pEventWrite = nullptr;
+	std::vector<EventStruct>* pEventC = nullptr;
+	std::vector<EventStruct>* pEventP = nullptr;
+
+	CLibevent *net = nullptr;
 };
 
 extern Work *work;

@@ -2,7 +2,7 @@
 
 class IRunnable {
 public:
-	virtual void Init() = 0;
-	virtual void Run() = 0;
-	virtual void Stop() = 0;
+	virtual int Init() = 0;
+	virtual int Run() = 0;
+	virtual int Stop() = 0;
 };

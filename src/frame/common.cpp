@@ -2,8 +2,14 @@
 
 std::mutex ioMtx;
 
-SafeBuffer<EventStruct> eventsRead;
-SafeBuffer<EventStruct> eventsWrite;
+SafeBuffer<IRunnable*>* threadPC = nullptr;
+std::vector<IRunnable*>* threadP = nullptr;
 
-//SafeBuffer eventsRead;
-//SafeBuffer eventsWrite;
+void RegThread(IRunnable* r) {
+	if (threadPC == nullptr) {
+		threadPC = new SafeBuffer<IRunnable *>;
+	}
+	threadP = threadPC->Productor(threadP);
+	threadP->push_back(r);
+	threadP = threadPC->Productor(threadP);
+}

@@ -1,39 +1,51 @@
-#include "Libevent.h"
 #include "thread"
 #include "mutex"
 #include <csignal>
-#include "Session.h"
-#include "common.h"
+#include "./frame/Session.h"
 #include "Work.h"
 #include "Client.h"
+#include "./frame/Libevent.h"
 
 Work *work = new Work;
 
-void Work::Init() {
-	pEventRead = eventsRead.Comsumer(pEventRead);
-	pEventWrite = eventsWrite.Productor(pEventWrite);
+Work::Work() {
+	RegThread(this);
 }
 
-void Work::Run() {
+Work::~Work() {
+	// do nothing
+}
+
+int Work::Init() {
+	net = new CLibevent;
+	RegThread(net);
+
+	net->Consume(&pEventC);
+	net->Product(&pEventP);
+	return 0;
+}
+
+int Work::Run() {
 	while (true) {
-		pEventRead = eventsRead.Comsumer(pEventRead);
-		pEventWrite = eventsWrite.Productor(pEventWrite);
+		net->Consume(&pEventC);
+		net->Product(&pEventP);
+		std::cout << __FUNCTION__ << std::endl;
 
 		// 处理net
-		for (auto it = pEventRead->begin(); it != pEventRead->end(); ++it) {
+		for (auto it = pEventC->begin(); it != pEventC->end(); ++it) {
 			if (it->e == Event::SocketCreate) {
 				Client::CreateClient((bufferevent*)it->p1);
 			}
 			else if (it->e == Event::DataIn) {
-				int uid = ((SocketInfo*)it->bev->cbarg)->uid;
-				gClients[uid]->OnMsg(it->p1, it->i1);
-				delete (char*)it->p1;
+				//int uid = ((SocketInfo*)it->bev->cbarg)->uid;
+				//gClients[uid]->OnMsg(it->p1, it->i1);
+				//delete (char*)it->p1;
 			}
 			else if (it->e == Event::SocketErr) {
 				Client::DestroyClient((bufferevent*)it->p1);
 			}
 		}
-		pEventRead->clear();
+		pEventC->clear();
 
 		// 处理该线程逻辑
 		{
@@ -44,4 +56,9 @@ void Work::Run() {
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
+}
+
+int Work::Stop() {
+	// todo
+	return 0;
 }
