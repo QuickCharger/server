@@ -81,7 +81,7 @@ Session::~Session() {
 		m_ch = nullptr;
 	}
 	if (m_ev) {
-		struct bufferevent_private2 *locking = BEV_UPCAST2(m_ev);
+		//struct bufferevent_private2 *locking = BEV_UPCAST2(m_ev);
 		bufferevent_decref(m_ev);
 		m_ev = nullptr;
 	}
@@ -97,7 +97,7 @@ void Session::Append(char* ch, int len) {
 
 
 void Session::Send(char* ch, int len) {
-	struct bufferevent_private2 *locking = BEV_UPCAST2(m_ev);
+	//struct bufferevent_private2 *locking = BEV_UPCAST2(m_ev);
 	bufferevent_write(m_ev, ch, len);
 }
 
