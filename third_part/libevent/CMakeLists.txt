@@ -3,13 +3,18 @@ project(Libevent)
 
 set(LIBEVENT_VERSION "release-2.1.12-stable")
 set(LIBEVENT_URL "https://github.com/libevent/libevent/archive/refs/tags/${LIBEVENT_VERSION}.tar.gz")
+set(LIBEVENT_LOCAL_TAR_GZ "${CMAKE_CURRENT_LIST_DIR}/libevent-${LIBEVENT_VERSION}.tar.gz")
 set(LIBEVENT_TAR_GZ "${CMAKE_CURRENT_BINARY_DIR}/libevent-${LIBEVENT_VERSION}.tar.gz")
 set(LIBEVENT_SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/libevent-${LIBEVENT_VERSION}")
 set(LIBEVENT_BUILD_DIR "${LIBEVENT_SOURCE_DIR}/build")
 
 #  π”√ curl œ¬‘ÿ libevent
 find_program(CURL_EXECUTABLE NAMES curl PATHS C:/cygwin64/bin)
-if(NOT EXISTS ${LIBEVENT_TAR_GZ})
+message(STATUS "find libevent path ${LIBEVENT_LOCAL_TAR_GZ}")
+if(EXISTS ${LIBEVENT_LOCAL_TAR_GZ})
+  message(STATUS "Find libevent. copy to ${LIBEVENT_TAR_GZ}")
+  file(COPY ${LIBEVENT_LOCAL_TAR_GZ} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+else()
   message(STATUS "Downloading libevent...")
   execute_process(
     COMMAND ${CURL_EXECUTABLE} -L ${LIBEVENT_URL} -o ${LIBEVENT_TAR_GZ}
