@@ -43,6 +43,13 @@ void signal_handler(int signal) {
 	exit(0);
 }
 
+//std::thread t(createThread, std::ref(*it));
+//void createThread(IRunnable* r) {
+//	r->Init();
+//	r->Run();
+//	r->Stop();
+//}
+
 int main(int argc, char **argv)
 {
 	std::signal(SIGINT, signal_handler);   // Ctrl+C
@@ -54,17 +61,15 @@ int main(int argc, char **argv)
 	while (true) {
 		threadC = threadPC->Comsumer(threadC);
 		for (auto it = threadC->begin(); it != threadC->end(); ++it) {
-			std::thread t([it]()-> void {
-				std::cout << ((void*)(*it)) << std::endl;
-				(*it)->Init();
-				std::cout << ((void*)(*it)) << std::endl;
-				(*it)->Run();
-				(*it)->Stop();
+			IRunnable* i = *it;
+			std::thread t([i]()-> void {
+				i->Init();
+				i->Run();
+				i->Stop();
 			});
 			t.detach();
 		}
 		threadC->clear();
-		threadC = threadPC->Comsumer(threadC);
 	}
 
 	return 0;

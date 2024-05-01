@@ -1,47 +1,43 @@
+// 
+/**
+ * 压测
+ * 每工作一段时间就休息一下 观察数据有没有问题
+ * 
+ * 2024/04/30
+ */
+
 let net = require('net')
 
-// 每工作一段时间就休息一下 观察数据有没有问题
-let working = true
+let [port, ip] = [12345, '127.0.0.1']
 
-let chunk1k = `1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890`
+// 运行时间 / 休息时间 秒
+let [runTime, sleepTime] = [10, 3]
 
-let cSend = 0
-let cRecv = 0
-let cDiff = 0
-clientSocket1 = net.connect(12345, "127.0.0.1")
-clientSocket1
-	.on('close', () => {
+// 目标客户量 / 实际客户量
+let [targetClientCount, clientCount] = [999, 0]
+
+// 每次发送包的大小
+let packLen = 1000 * 1
+let packInterval = 10
+let chunk = '1234567890'.repeat(packLen / 10)
+
+// 统计
+let [cSend, cRecv, cDiff] = [0, 0, 0]
+
+//----------------------------------------------------
+
+// 0 not work. 1 work
+let workState = 0
+
+let createClient = () => {
+	let fdWorking = false
+	let c = net.connect(port, ip)
+	c.on('close', () => {
+		fdWorking = false
 		console.log(`client close`)
 	}).on('connect', () => {
+		fdWorking = true
 		console.log(`client connect`)
-		setInterval(() => {
-			if (!working)
-				return
-			for (let i = 0; i < 100; ++i) {
-				clientSocket1.write(chunk1k)
-				cSend += chunk1k.length
-			}
-			// if (clientSocket1.write(chunk1k)) {
-			// 	// console.log("send qwer success")
-			// } else {
-			// 	console.log("send qwer failed")
-			// }
-		}, 1)
-		setInterval(() => {
-			cDiff += cSend - cRecv
-			console.log(`diff ${cDiff} send ${cSend} recv ${cRecv}`)
-			cSend = 0
-			cRecv = 0
-		}, 1000)
-
-		setInterval(() => {
-			working = false
-			setTimeout(() => {
-				working = true
-			}, 3000)
-		}, 20000)
-
-		//clientSocket1.write("qwer")
 	}).on('data', data => {
 		// console.log(`client data. send from server length ${data.length}`)
 		cRecv += data.length
@@ -51,15 +47,51 @@ clientSocket1
 	}).on('end', () => {
 		console.log(`client end`)
 	}).on('error', () => {
+		fdWorking = false
 		console.log(`client error`)
 	}).on('lookup', () => {
 		console.log(`client lookup`)
 	}).on('timeout', () => {
 		console.log(`client timeout`)
 	})
+	setInterval(() => {
+		if (!working)
+			return
+		if (!fdWorking)
+			return
+		c.write(chunk)
+		cSend += chunk.length
+	}, packInterval)
+}
 
+function sleep (ms) {
+	return new Promise(resolve => setTimeout(resolve, ms))
+}
 
+async function main () {
+	setInterval(() => {
+		if (clientCount >= targetClientCount)
+			return
+		createClient()
+		clientCount++
+	}, 1)
 
-setTimeout(() => {
-	clientSocket1.end()
-}, 100000000)
+	setInterval(() => {
+		cDiff += cSend - cRecv
+		console.log(`diff ${cDiff} send ${cSend} recv ${cRecv}`)
+		cSend = 0
+		cRecv = 0
+	}, 1000)
+
+	while (true) {
+		workState = 1
+		await sleep(runTime)
+		workState
+		await sleep(sleepTime)
+		console.log(`init`)
+		cSend = 0
+		cRecv = 0
+	}
+}
+
+main()

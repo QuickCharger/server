@@ -34,20 +34,17 @@ int CLibevent::Init() {
 
 	{
 		struct timeval one_ms_delay = { 0, 1 };
-		struct event *timeout_event = event_new(this->base, -1, EV_PERSIST, 
-			[](evutil_socket_t fd, short event, void *arg)
-		{
-			((CLibevent*)arg)->onTimer1ms(fd, event, nullptr);
-		}, this);
+		struct event *timeout_event = event_new(this->base, -1, EV_PERSIST, [](evutil_socket_t fd, short event, void *arg) { ((CLibevent*)arg)->onTimer1ms(fd, event, nullptr); }, this);
 		event_add(timeout_event, &one_ms_delay);
 	}
 	{
 		struct timeval one_ms_delay = { 1, 0 };
-		struct event *timeout_event = event_new(this->base, -1, EV_PERSIST, [](evutil_socket_t fd, short event, void *arg) 
-		{
-			((CLibevent*)arg)->onTimer1s(fd, event, nullptr);
-		}, nullptr);
+		struct event *timeout_event = event_new(this->base, -1, EV_PERSIST, [](evutil_socket_t fd, short event, void *arg) { ((CLibevent*)arg)->onTimer1s(fd, event, nullptr); }, nullptr);
 		event_add(timeout_event, &one_ms_delay);
+	}
+
+	if (this->config.port) {
+		Listen(this->config.port);
 	}
 
 	return 0;
@@ -60,12 +57,18 @@ int CLibevent::Listen(int port) {
 	sin.sin_addr.s_addr = htonl(0);
 	sin.sin_port = htons(port);
 
-	//struct evconnlistener *listener = evconnlistener_new_bind(base, accept_conn_cb, NULL, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1, (struct sockaddr*)&sin, sizeof(sin));
-	//if (!listener) {
-	//	perror("Couldn't create listener");
-	//	return 1;
-	//}
-	//evconnlistener_set_error_cb(listener, accept_error_cb);
+	struct evconnlistener *listener = evconnlistener_new_bind(base, 
+		[](struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *ctx) {
+			((CLibevent*)ctx)->accept_conn_cb(listener, fd, address, socklen, nullptr); 
+		},
+		NULL, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1, (struct sockaddr*)&sin, sizeof(sin));
+	if (!listener) {
+		perror("Couldn't create listener");
+		return 1;
+	}
+	evconnlistener_set_error_cb(listener, [](struct evconnlistener *listener, void *ctx)->void {
+		((CLibevent*)ctx)->accept_error_cb(listener, nullptr);
+	});
 
 	return 0;
 }
@@ -95,7 +98,6 @@ void CLibevent::Close() {
 	{
 		std::unique_lock<std::mutex> lck(ioMtx);
 		std::cout << "LIBEVENT " << __FUNCTION__ << std::endl;
-		std::cout << __FUNCTION__ << std::endl;
 	}
 #ifdef WIN32
 	WSACleanup();
@@ -137,9 +139,6 @@ void CLibevent::log(int severity, const char *msg)
 void CLibevent::onTimer1ms(evutil_socket_t, short, void*) {
 	this->pEventP = this->eventsFromNet.Productor(this->pEventP);
 	this->pEventC = this->eventsFromUser.Comsumer(this->pEventC);
-
-
-	std::cout << __FUNCTION__ << std::endl;
 }
 
 void CLibevent::onTimer1s(evutil_socket_t, short, void*) {

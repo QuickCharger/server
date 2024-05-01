@@ -7,6 +7,7 @@
 #include "./frame/Libevent.h"
 
 Work *work = new Work;
+int port = 12345;
 
 Work::Work() {
 	RegThread(this);
@@ -18,6 +19,7 @@ Work::~Work() {
 
 int Work::Init() {
 	net = new CLibevent;
+	net->config.port = port;
 	RegThread(net);
 
 	net->Consume(&pEventC);
@@ -29,7 +31,6 @@ int Work::Run() {
 	while (true) {
 		net->Consume(&pEventC);
 		net->Product(&pEventP);
-		std::cout << __FUNCTION__ << std::endl;
 
 		// ´¦Àínet
 		for (auto it = pEventC->begin(); it != pEventC->end(); ++it) {
