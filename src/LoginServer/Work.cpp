@@ -35,15 +35,15 @@ int Work::Run() {
 		// 处理net
 		for (auto it = pEventC->begin(); it != pEventC->end(); ++it) {
 			if (it->e == Event::SocketCreate) {
-				Client::CreateClient((bufferevent*)it->p1);
+				Client::CreateClient(it->bev);
 			}
 			else if (it->e == Event::DataIn) {
-				//int uid = ((SocketInfo*)it->bev->cbarg)->uid;
-				//gClients[uid]->OnMsg(it->p1, it->i1);
+				int uid = ((BufferEventArg*)(it->bev->cbarg))->uid;
+				gClients[uid]->OnMsg(it->p1, it->i1);
 				//delete (char*)it->p1;
 			}
 			else if (it->e == Event::SocketErr) {
-				Client::DestroyClient((bufferevent*)it->p1);
+				Client::DestroyClient(it->bev);
 			}
 		}
 		pEventC->clear();
@@ -51,7 +51,7 @@ int Work::Run() {
 		// 处理该线程逻辑
 		{
 			// 处理个虚假的逻辑
-			for (auto &it : Sessions) {
+			for (auto &it : gClients) {
 				it.second->FakeNews();
 			}
 		}

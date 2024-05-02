@@ -7,10 +7,14 @@ public:
 	static void CreateClient(bufferevent*);
 	static void DestroyClient(bufferevent*);
 
+	void InitSession(bufferevent*);
+
 	void OnMsg(void*, int);
 
+	void FakeNews();
+
 public:
-	bufferevent* m_bev = nullptr;
+	Session* m_session = nullptr;
 };
 
 extern std::map<int, Client*> gClients;

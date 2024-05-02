@@ -4,30 +4,30 @@
 #include <assert.h>
 #include "common.h"
 
-int ClientCounter = 0;
+//int ClientCounter = 0;
 
-std::map<int, Session*> Sessions = {};
+//std::map<int, Session*> Sessions = {};
 
-void Session_New(int fd, bufferevent* ev) {
-	Session *s = new Session(fd, ev);
-	assert(Sessions.find(fd) == Sessions.end());
-	Sessions[fd] = s;
-}
-
-void Session_Destroy(int fd) {
-	auto it = Sessions.find(fd);
-	if (it != Sessions.end()) {
-		delete it->second;
-		Sessions.erase(it);
-	}
-}
-
-void Session_Append(int fd, char*ch, int len) {
-	auto it = Sessions.find(fd);
-	if (it != Sessions.end()) {
-		it->second->Append(ch, len);
-	}
-}
+//void Session_New(int fd, bufferevent* ev) {
+//	Session *s = new Session(fd, ev);
+//	//assert(Sessions.find(fd) == Sessions.end());
+//	//Sessions[fd] = s;
+//}
+//
+//void Session_Destroy(int fd) {
+//	auto it = Sessions.find(fd);
+//	if (it != Sessions.end()) {
+//		delete it->second;
+//		Sessions.erase(it);
+//	}
+//}
+//
+//void Session_Append(int fd, char*ch, int len) {
+//	auto it = Sessions.find(fd);
+//	if (it != Sessions.end()) {
+//		it->second->Append(ch, len);
+//	}
+//}
 
 //void Client_New(int fd) {
 //	Client* c = new Client();
@@ -61,12 +61,11 @@ void Session_Append(int fd, char*ch, int len) {
 //	client_Destroy(fd, clientId, uid);
 //}
 
-Session::Session(int fd, bufferevent* ev) {
+Session::Session(bufferevent* ev) {
 	//{
 	//	std::unique_lock<std::mutex> lck(ioMtx);
 	//	std::cout << "Session fd " << fd << std::endl;
 	//}
-	m_fd = fd;
 	m_ev = ev;
 	//bufferevent_incref(ev);
 }
@@ -104,7 +103,7 @@ void Session::Send(char* ch, int len) {
 void Session::Desc() {
 	{
 		std::unique_lock<std::mutex> lck(ioMtx);
-		std::cout << "fd " << m_fd << " data " << (m_ch == nullptr ? "" : m_ch) << " datalen " << m_len << std::endl;
+		//std::cout << "fd " << m_fd << " data " << (m_ch == nullptr ? "" : m_ch) << " datalen " << m_len << std::endl;
 	}
 }
 

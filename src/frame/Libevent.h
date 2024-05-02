@@ -27,8 +27,10 @@
     2024/04/07 BDG INIT
 */
 
+class CLibevent;
 
-struct SocketInfo {
+struct BufferEventArg {
+	CLibevent* that = nullptr;
 	int uid = 0;
 };
 
@@ -49,7 +51,7 @@ public:
 	void Consume(std::vector<EventStruct>** p);
 	void Product(std::vector<EventStruct>** p);
 
-private:
+public:
 	static void log(int severity, const char *msg);
 
 	void onTimer1ms(evutil_socket_t, short, void*);
@@ -59,9 +61,14 @@ private:
 
 
 	void socket_read_cb(struct bufferevent *bev, void *ctx);
-
+	void socket_write_cb(struct bufferevent *bev, void *ctx);
 	void socket_event_cb(struct bufferevent *bev, short a_events, void *ctx);
 
+	static void accept_conn_cb_static(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *ctx);
+	static void accept_error_cb_static(struct evconnlistener *listener, void *ctx);
+	static void socket_read_cb_static(struct bufferevent *bev, void *ctx);
+	static void socket_write_cb_static(struct bufferevent *bev, void *ctx);
+	static void socket_event_cb_static(struct bufferevent *bev, short a_events, void *ctx);
 
 private:
 	struct event_base *base = nullptr;

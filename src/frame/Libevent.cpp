@@ -5,6 +5,11 @@
 #include "event2/thread.h"
 #include "map"
 
+int getNewCounter() {
+	static int fdCounter = 0;
+	return ++fdCounter;
+}
+
 int CLibevent::Init() {
 #ifdef WIN32
 	WSADATA wsaData;
@@ -57,18 +62,12 @@ int CLibevent::Listen(int port) {
 	sin.sin_addr.s_addr = htonl(0);
 	sin.sin_port = htons(port);
 
-	struct evconnlistener *listener = evconnlistener_new_bind(base, 
-		[](struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *ctx) {
-			((CLibevent*)ctx)->accept_conn_cb(listener, fd, address, socklen, nullptr); 
-		},
-		NULL, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1, (struct sockaddr*)&sin, sizeof(sin));
+	struct evconnlistener *listener = evconnlistener_new_bind(base, CLibevent::accept_conn_cb_static, this, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1, (struct sockaddr*)&sin, sizeof(sin));
 	if (!listener) {
 		perror("Couldn't create listener");
 		return 1;
 	}
-	evconnlistener_set_error_cb(listener, [](struct evconnlistener *listener, void *ctx)->void {
-		((CLibevent*)ctx)->accept_error_cb(listener, nullptr);
-	});
+	evconnlistener_set_error_cb(listener, CLibevent::accept_error_cb_static);
 
 	return 0;
 }
@@ -87,8 +86,6 @@ int CLibevent::Run() {
 	perror("LIBEVENT msg");
 	return 0;
 }
-
-//int AddEvent(Event);
 
 int CLibevent::Stop() {
 	return 0;
@@ -146,7 +143,6 @@ void CLibevent::onTimer1s(evutil_socket_t, short, void*) {
 	//std::cout << "OnTimer1s socket total " << cTotal << " living " << cLiving << std::endl;
 }
 
-
 void CLibevent::accept_conn_cb(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *ctx)
 {
 	struct event_base *base = evconnlistener_get_base(listener);
@@ -156,16 +152,16 @@ void CLibevent::accept_conn_cb(struct evconnlistener *listener, evutil_socket_t 
 	// 如果不提前incref 可能会出现session创建前bev就销毁 会崩溃
 	//bufferevent_incref(bev);
 
-	SocketInfo *info = new SocketInfo;
-	//info->uid = ++uid;
+	BufferEventArg *arg = new BufferEventArg;
+	arg->that = this;
+	arg->uid = getNewCounter();
 
-	//bufferevent_setcb(bev, socket_read_cb, NULL, socket_event_cb, info);
+	bufferevent_setcb(bev, CLibevent::socket_read_cb_static, CLibevent::socket_write_cb_static, CLibevent::socket_event_cb_static, arg);
 	bufferevent_enable(bev, EV_READ | EV_WRITE);
-
 
 	{
 		EventStruct e;
-		e.p1 = bev;
+		e.bev = bev;
 		e.e = Event::SocketCreate;
 		pEventP->push_back(std::move(e));
 	}
@@ -186,7 +182,7 @@ void CLibevent::accept_error_cb(struct evconnlistener *listener, void *ctx)
 }
 
 
-void CLibevent::socket_read_cb(struct bufferevent *bev, void *ctx)
+void CLibevent::socket_read_cb(struct bufferevent *bev, void *)
 {
 	evutil_socket_t fd = bufferevent_getfd(bev);
 	struct evbuffer *input = bufferevent_get_input(bev);
@@ -207,14 +203,17 @@ void CLibevent::socket_read_cb(struct bufferevent *bev, void *ctx)
 	evbuffer_remove(input, ch, len);
 
 	EventStruct e;
-	e.p1 = bev;
+	e.bev = bev;
 	e.e = Event::DataIn;
-	e.p2 = ch;
-	e.i2 = len;
+	e.p1 = ch;
+	e.i1 = len;
 	pEventP->push_back(std::move(e));
 }
 
-void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *ctx)
+void CLibevent::socket_write_cb(struct bufferevent *bev, void *)
+{}
+
+void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *)
 {
 	// todo
 	// a_events 处理的不完善 没有处理所有的情况
@@ -228,10 +227,10 @@ void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *c
 
 	EventStruct e;
 	e.e = Event::SocketErr;
-	e.p1 = bev;
+	e.bev = bev;
 	pEventP->push_back(std::move(e));
 
-	struct SocketInfo *inf = (SocketInfo*)ctx;
+	//struct SocketInfo *inf = (SocketInfo*)ctx;
 	struct evbuffer *input = bufferevent_get_input(bev);
 	int finished = 0;
 
@@ -263,4 +262,32 @@ void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *c
 	//	std::cout << "income socket total " << cTotal << " living " << cLiving << std::endl;
 	//}
 
+}
+
+void CLibevent::accept_conn_cb_static(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *ctx)
+{
+	CLibevent* that = (CLibevent*)ctx;
+	that->accept_conn_cb(listener, fd, address, socklen, nullptr);
+}
+
+void CLibevent::accept_error_cb_static(struct evconnlistener *listener, void *ctx) {
+	// todo
+}
+
+void CLibevent::socket_read_cb_static(struct bufferevent *bev, void *ctx)
+{
+	CLibevent* that = ((BufferEventArg*)ctx)->that;
+	that->socket_read_cb(bev, ctx);
+}
+
+void CLibevent::socket_write_cb_static(struct bufferevent *bev, void *ctx)
+{
+	CLibevent* that = ((BufferEventArg*)ctx)->that;
+	that->socket_write_cb(bev, ctx);
+}
+
+void CLibevent::socket_event_cb_static(struct bufferevent *bev, short a_events, void *ctx)
+{
+	CLibevent* that = ((BufferEventArg*)ctx)->that;
+	that->socket_event_cb(bev, a_events, ctx);
 }

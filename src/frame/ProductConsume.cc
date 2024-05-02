@@ -11,8 +11,11 @@ enum class Event {
 	Close,
 };
 
+struct bufferevent;
+
 // È·±£plain
 struct EventStruct {
+	bufferevent* bev = nullptr;
 	void* p1 = nullptr;
 	void* p2 = nullptr;
 	void *p3 = nullptr;
