@@ -22,7 +22,7 @@ let packInterval = 10
 let chunk = '1234567890'.repeat(packLen / 10)
 
 // 统计
-let [cSend, cRecv, cDiff] = [0, 0, 0]
+let [cSend, cRecv] = [0, 0]
 
 //----------------------------------------------------
 
@@ -32,12 +32,25 @@ let workState = 0
 let createClient = () => {
 	let fdWorking = false
 	let c = net.connect(port, ip)
+
+	let timer = setInterval(() => {
+		if (!workState)
+			return
+		if (!fdWorking)
+			return
+		c.write(chunk)
+		cSend += chunk.length
+	}, packInterval)
+
 	c.on('close', () => {
 		fdWorking = false
-		console.log(`client close`)
+		c.destroy()
+		clearInterval(timer)
+		clientCount--
+		// console.log(`client close`)
 	}).on('connect', () => {
 		fdWorking = true
-		console.log(`client connect`)
+		// console.log(`client connect`)
 	}).on('data', data => {
 		// console.log(`client data. send from server length ${data.length}`)
 		cRecv += data.length
@@ -45,23 +58,15 @@ let createClient = () => {
 	}).on('drain', () => {
 		// console.log(`client drain`)
 	}).on('end', () => {
-		console.log(`client end`)
+		// console.log(`client end`)
 	}).on('error', () => {
 		fdWorking = false
-		console.log(`client error`)
+		// console.log(`client error`)
 	}).on('lookup', () => {
 		console.log(`client lookup`)
 	}).on('timeout', () => {
 		console.log(`client timeout`)
 	})
-	setInterval(() => {
-		if (!working)
-			return
-		if (!fdWorking)
-			return
-		c.write(chunk)
-		cSend += chunk.length
-	}, packInterval)
 }
 
 function sleep (ms) {
@@ -77,18 +82,17 @@ async function main () {
 	}, 1)
 
 	setInterval(() => {
-		cDiff += cSend - cRecv
+		let cDiff = cSend - cRecv
 		console.log(`diff ${cDiff} send ${cSend} recv ${cRecv}`)
-		cSend = 0
-		cRecv = 0
+		// cSend = 0
+		// cRecv = 0
 	}, 1000)
 
 	while (true) {
 		workState = 1
-		await sleep(runTime)
-		workState
-		await sleep(sleepTime)
-		console.log(`init`)
+		await sleep(1000 * runTime)
+		workState = 0
+		await sleep(1000 * sleepTime)
 		cSend = 0
 		cRecv = 0
 	}

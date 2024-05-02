@@ -1,0 +1,15 @@
+client.js server.js 自测
+  windows虚拟机下
+    packLen = 1000 时 速度 970+MB/10s 
+	极限 packLen = 1000 * 2 速度 1.9G/10s 无丢包
+	极限 packLen = 1000 * 3 速度 2.7G/10s 无丢包
+	极限 packLen = 1000 * 4 速度 3.3G/10s 无丢包
+	极限 packLen = 1000 * 5 速度 4.0G/10s 无丢包
+	极限 packLen = 1000 * 7 速度 5.0G/10s 无丢包
+	极限 packLen = 1000 * 8 速度 5.3G/10s 无丢包
+	极限 packLen = 1000 * 9 速度 5.7G/10s 无丢包
+
+debug io 2G ok
+debug io 2.1G ok
+
+release io 3.7G 时ok 时false
