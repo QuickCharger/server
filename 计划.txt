@@ -11,3 +11,4 @@ todo
   测下极限 和现有的差别
 
   test/client 的极限 500MB+/s 没有丢包
+  需要测试下libevent的极限值
