@@ -3,8 +3,8 @@
 #include <mutex>
 #include <vector>
 
-#include "ProductConsume.cc"
-#include "IRunnable.cc"
+#include "ProductConsume.h"
+#include "IRunnable.h"
 
 extern std::mutex ioMtx;
 

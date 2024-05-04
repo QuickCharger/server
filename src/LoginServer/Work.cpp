@@ -34,13 +34,12 @@ int Work::Run() {
 
 		// ´¦Àínet
 		for (auto it = pEventC->begin(); it != pEventC->end(); ++it) {
-			if (it->e == Event::SocketCreate) {
+			if (it->e == Event::SocketAccept) {
 				Client::CreateClient(it->bev);
 			}
 			else if (it->e == Event::DataIn) {
-				int uid = ((BufferEventArg*)(it->bev->cbarg))->uid;
+				long long uid = it->uid;
 				gClients[uid]->OnMsg(it->p1, it->i1);
-				//delete (char*)it->p1;
 			}
 			else if (it->e == Event::SocketErr) {
 				Client::DestroyClient(it->bev);

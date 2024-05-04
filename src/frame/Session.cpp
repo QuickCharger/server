@@ -62,12 +62,8 @@
 //}
 
 Session::Session(bufferevent* ev) {
-	//{
-	//	std::unique_lock<std::mutex> lck(ioMtx);
-	//	std::cout << "Session fd " << fd << std::endl;
-	//}
+	// 确保bufferevent已经在外部 bufferevent_incref
 	m_ev = ev;
-	//bufferevent_incref(ev);
 }
 
 Session::~Session() {
@@ -84,6 +80,13 @@ Session::~Session() {
 		bufferevent_decref(m_ev);
 		m_ev = nullptr;
 	}
+}
+
+void Session::SetBufferEvent(bufferevent* e) {
+	if (m_ev) {
+		bufferevent_decref(m_ev);
+	}
+	m_ev = e;
 }
 
 void Session::Append(char* ch, int len) {

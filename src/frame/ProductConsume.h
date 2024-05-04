@@ -5,24 +5,45 @@
 
 enum class Event {
 	BLANK = 0,	// 占位
-	SocketCreate = 1,
+	SocketAccept = 1,	// server
 	DataIn,
 	SocketErr,
 	Close,
+	SocketConnectTo,	// client
+	SocketConnectErr,
+	SocketConnectSuccess,
+	RegBufferEvent,		// 给socket添加bufferevent
+};
+
+enum class SocketState {
+	BLANK = 0,	// 占位
+	Connecting,	// 主动连接ing
+	Connected,	// 连接
+	Err,		// 错误发生
+	Closeing,	// 正常关闭ing 也就是处于四次握手
+	Closed,		// 
 };
 
 struct bufferevent;
 
 // 确保plain
 struct EventStruct {
+	// libevent侧数据
 	bufferevent* bev = nullptr;
+	void* that = nullptr;
+	long long uid = 0;
+	Event e = Event::BLANK;
+	SocketState state = SocketState::BLANK;
+
+	// 用户侧数据
 	void* p1 = nullptr;
 	void* p2 = nullptr;
-	void *p3 = nullptr;
+	long long l1 = 0;
+	long long l2 = 0;
 	int i1 = 0;
 	int i2 = 0;
-	int i3 = 0;
-	Event e = Event::BLANK;
+	std::string str1;
+	std::string str2;
 };
 
 // 三个buffer 一个生产者 一个消费者 轮流切换到 闲置buffer

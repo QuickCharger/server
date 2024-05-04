@@ -1,5 +1,10 @@
 #include "./frame/Session.h"
 
+// plain
+struct Msg {
+
+};
+
 class Client {
 public:
 	Client();
@@ -14,7 +19,8 @@ public:
 	void FakeNews();
 
 public:
+	std::vector<std::string> m_unhandledMsg;	
 	Session* m_session = nullptr;
 };
 
-extern std::map<int, Client*> gClients;
+extern std::map<long long, Client*> gClients;

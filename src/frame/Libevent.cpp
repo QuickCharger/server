@@ -1,14 +1,12 @@
 #include "Libevent.h"
+#include <atomic>
 #include <functional>
-#include "mutex"
+#include <mutex>
 #include "common.h"
 #include "event2/thread.h"
 #include "map"
 
-int getNewCounter() {
-	static int fdCounter = 0;
-	return ++fdCounter;
-}
+std::atomic<long long> CLibevent::cUid = 1;
 
 int CLibevent::Init() {
 #ifdef WIN32
@@ -44,11 +42,11 @@ int CLibevent::Init() {
 	}
 	{
 		struct timeval one_ms_delay = { 1, 0 };
-		struct event *timeout_event = event_new(this->base, -1, EV_PERSIST, [](evutil_socket_t fd, short event, void *arg) { ((CLibevent*)arg)->onTimer1s(fd, event, nullptr); }, nullptr);
+		struct event *timeout_event = event_new(this->base, -1, EV_PERSIST, [](evutil_socket_t fd, short event, void *arg) { ((CLibevent*)arg)->onTimer1s(fd, event, nullptr); }, this);
 		event_add(timeout_event, &one_ms_delay);
 	}
 
-	if (this->config.port) {
+	if (this->config.port > 0) {
 		Listen(this->config.port);
 	}
 
@@ -69,11 +67,6 @@ int CLibevent::Listen(int port) {
 	}
 	evconnlistener_set_error_cb(listener, CLibevent::accept_error_cb_static);
 
-	return 0;
-}
-
-// todo
-int CLibevent::Connect(char* ip, int port) {
 	return 0;
 }
 
@@ -112,9 +105,10 @@ void CLibevent::Consume(std::vector<EventStruct>** p) {
 }
 
 // 产生消息
-// 通产是 使用者 产生消息给 client 或 libevent
+// 通常是 使用者 产生消息给 client 或 libevent
 void CLibevent::Product(std::vector<EventStruct>** p) {
 	// todo
+	*p = eventsFromUser.Productor(*p);
 }
 
 void CLibevent::log(int severity, const char *msg)
@@ -133,9 +127,72 @@ void CLibevent::log(int severity, const char *msg)
 	//fprintf(logfile, "[%s] %s\n", s, msg);
 }
 
+long long CLibevent::GenUid() {
+	return ++CLibevent::cUid;
+}
+
+struct bufferevent* CLibevent::genBEV(event_base* base, evutil_socket_t fd, int options)
+{
+	struct bufferevent *bev = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
+	EventStruct *arg = new EventStruct;
+	arg->bev = bev;
+	arg->that = this;
+	arg->uid = CLibevent::GenUid();
+	bufferevent_setcb(bev, CLibevent::socket_read_cb_static, CLibevent::socket_write_cb_static, CLibevent::socket_event_cb_static, arg);
+	bufferevent_enable(bev, EV_READ | EV_WRITE);
+	return bev;
+}
+
+int CLibevent::connectTo(struct bufferevent *bev, const std::string& ip, int port)
+{
+	struct sockaddr_in sin;
+	memset(&sin, 0, sizeof(sin));
+	sin.sin_family = AF_INET;
+	sin.sin_port = htons(port);
+	inet_pton(AF_INET, ip.c_str(), &sin.sin_addr);
+	return bufferevent_socket_connect(bev, (struct sockaddr *)&sin, sizeof(sin));
+}
+
+void CLibevent::updateFdState(struct bufferevent* bev, SocketState state)
+{
+	((EventStruct *)bev->cbarg)->state = state;
+}
+
 void CLibevent::onTimer1ms(evutil_socket_t, short, void*) {
 	this->pEventP = this->eventsFromNet.Productor(this->pEventP);
 	this->pEventC = this->eventsFromUser.Comsumer(this->pEventC);
+
+	for (auto it = pEventC->begin(); it != pEventC->end(); ++it) {
+		if (it->e == Event::SocketConnectTo) {
+			std::string ip = it->str1;
+			int port = it->i1;
+			long long uid = it->uid;
+
+			struct bufferevent *bev = this->genBEV(base, -1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
+			((EventStruct *)bev->cbarg)->uid = uid;
+			bufferevent_incref(bev);
+
+			updateFdState(bev, SocketState::Connecting);
+
+			EventStruct e;
+			e.bev = bev;
+			e.e = Event::RegBufferEvent;
+			e.uid = uid;
+			pEventP->push_back(std::move(e));
+
+			if (this->connectTo(bev, ip, port) != 0)
+			{
+				updateFdState(bev, SocketState::Err);
+
+				EventStruct e;
+				e.bev = bev;
+				e.e = Event::SocketConnectErr;
+				e.uid = uid;
+				pEventP->push_back(std::move(e));
+			}
+		}
+	}
+	pEventC->clear();
 }
 
 void CLibevent::onTimer1s(evutil_socket_t, short, void*) {
@@ -146,28 +203,18 @@ void CLibevent::onTimer1s(evutil_socket_t, short, void*) {
 void CLibevent::accept_conn_cb(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *ctx)
 {
 	struct event_base *base = evconnlistener_get_base(listener);
-	struct bufferevent *bev = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
 
+	struct bufferevent *bev = this->genBEV(base, fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
 	// bev在session有引用
 	// 如果不提前incref 可能会出现session创建前bev就销毁 会崩溃
-	//bufferevent_incref(bev);
-
-	BufferEventArg *arg = new BufferEventArg;
-	arg->that = this;
-	arg->uid = getNewCounter();
-
-	bufferevent_setcb(bev, CLibevent::socket_read_cb_static, CLibevent::socket_write_cb_static, CLibevent::socket_event_cb_static, arg);
-	bufferevent_enable(bev, EV_READ | EV_WRITE);
+	bufferevent_incref(bev);
 
 	{
 		EventStruct e;
 		e.bev = bev;
-		e.e = Event::SocketCreate;
+		e.e = Event::SocketAccept;
 		pEventP->push_back(std::move(e));
 	}
-
-	//cTotal++;
-	//cLiving++;
 }
 
 void CLibevent::accept_error_cb(struct evconnlistener *listener, void *ctx)
@@ -203,7 +250,7 @@ void CLibevent::socket_read_cb(struct bufferevent *bev, void *)
 	evbuffer_remove(input, ch, len);
 
 	EventStruct e;
-	e.bev = bev;
+	e.uid = ((EventStruct*)(bev->cbarg))->uid;
 	e.e = Event::DataIn;
 	e.p1 = ch;
 	e.i1 = len;
@@ -213,28 +260,17 @@ void CLibevent::socket_read_cb(struct bufferevent *bev, void *)
 void CLibevent::socket_write_cb(struct bufferevent *bev, void *)
 {}
 
-void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *)
+void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *arg)
 {
-	// todo
-	// a_events 处理的不完善 没有处理所有的情况
-
-	//evutil_socket_t fd = bufferevent_getfd(bev);
-	//{
-	//	std::unique_lock<std::mutex> lck(mtxEventsOUT);
-	//	eventsOUT.push_back(std::make_tuple(fd, Event::SocketErr, nullptr, 0));
-	//}
-
-
 	EventStruct e;
-	e.e = Event::SocketErr;
 	e.bev = bev;
-	pEventP->push_back(std::move(e));
+	e.uid = ((EventStruct *)bev->cbarg)->uid;
 
-	//struct SocketInfo *inf = (SocketInfo*)ctx;
 	struct evbuffer *input = bufferevent_get_input(bev);
 	int finished = 0;
 
-	if (a_events & BEV_EVENT_EOF) {
+	if (a_events & BEV_EVENT_EOF)
+	{
 		size_t len = evbuffer_get_length(input);
 		{
 			//std::unique_lock<std::mutex> lck(ioMtx); 
@@ -242,26 +278,29 @@ void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *)
 		}
 		finished = 1;
 	}
-	if (a_events & BEV_EVENT_ERROR) {
+	else if (a_events & BEV_EVENT_ERROR)
+	{
 		{
 			std::unique_lock<std::mutex> lck(ioMtx);
 			//std::cout << "Got " << a_events<< " error from " << inf->name << " : " << evutil_socket_error_to_string(EVUTIL_SOCKET_ERROR()) << std::endl;
 		}
 		finished = 1;
 	}
-	finished = 1;
+	else if (a_events & BEV_EVENT_CONNECTED)
+	{
+		e.e = Event::SocketConnectSuccess;
+	}
 
-	bufferevent_disable(bev, EV_READ | EV_WRITE);
+	if (finished == 1) {
+		e.e = Event::SocketErr;
+		bufferevent_disable(bev, EV_READ | EV_WRITE);
+	}
+
+	pEventP->push_back(std::move(e));
+
 	//if (finished) {
 	//	bufferevent_free(bev);
 	//}
-
-	//cLiving--;
-	//{
-	//	std::unique_lock<std::mutex> lck(ioMtx);
-	//	std::cout << "income socket total " << cTotal << " living " << cLiving << std::endl;
-	//}
-
 }
 
 void CLibevent::accept_conn_cb_static(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *ctx)
@@ -274,20 +313,20 @@ void CLibevent::accept_error_cb_static(struct evconnlistener *listener, void *ct
 	// todo
 }
 
-void CLibevent::socket_read_cb_static(struct bufferevent *bev, void *ctx)
+void CLibevent::socket_read_cb_static(struct bufferevent *bev, void *arg)
 {
-	CLibevent* that = ((BufferEventArg*)ctx)->that;
-	that->socket_read_cb(bev, ctx);
+	CLibevent* that = (CLibevent*)(((EventStruct*)arg)->that);
+	that->socket_read_cb(bev, arg);
 }
 
-void CLibevent::socket_write_cb_static(struct bufferevent *bev, void *ctx)
+void CLibevent::socket_write_cb_static(struct bufferevent *bev, void *arg)
 {
-	CLibevent* that = ((BufferEventArg*)ctx)->that;
-	that->socket_write_cb(bev, ctx);
+	CLibevent* that = (CLibevent*)(((EventStruct*)arg)->that);
+	that->socket_write_cb(bev, arg);
 }
 
-void CLibevent::socket_event_cb_static(struct bufferevent *bev, short a_events, void *ctx)
+void CLibevent::socket_event_cb_static(struct bufferevent *bev, short a_events, void *arg)
 {
-	CLibevent* that = ((BufferEventArg*)ctx)->that;
-	that->socket_event_cb(bev, a_events, ctx);
+	CLibevent* that = (CLibevent*)(((EventStruct*)arg)->that);
+	that->socket_event_cb(bev, a_events, arg);
 }

@@ -11,14 +11,15 @@
 #include <list>
 #include <vector>
 #include <assert.h>
+#include <atomic>
 
 #include <event2/listener.h>
 #include <event2/bufferevent.h>
 #include <event2/buffer.h>
 #include <event2/bufferevent_struct.h>
 
-#include "IRunnable.cc"
-#include "ProductConsume.cc"
+#include "IRunnable.h"
+#include "ProductConsume.h"
 
 /*
   网络事件库
@@ -26,13 +27,12 @@
   AUTHOR
     2024/04/07 BDG INIT
 */
-
 class CLibevent;
 
-struct BufferEventArg {
-	CLibevent* that = nullptr;
-	int uid = 0;
-};
+//struct BufferEventArg {
+//	CLibevent* that = nullptr;
+//	long long uid = 0;
+//};
 
 class CLibevent : public IRunnable {
 public:
@@ -40,7 +40,6 @@ public:
 	~CLibevent() {};
 	int Init();
 	int Listen(int port);
-	int Connect(char* ip, int port);
 	int Run();
 
 	//int AddEvent(Event);
@@ -53,6 +52,12 @@ public:
 
 public:
 	static void log(int severity, const char *msg);
+	static long long GenUid();
+
+	// bufferevent 的操作
+	struct bufferevent* genBEV(event_base* base, evutil_socket_t fd, int options);
+	int  connectTo(struct bufferevent *bev, const std::string& ip, int port);
+	void updateFdState(struct bufferevent* bev, SocketState state);
 
 	void onTimer1ms(evutil_socket_t, short, void*);
 	void onTimer1s(evutil_socket_t, short, void*);
@@ -78,4 +83,6 @@ private:
 
 	std::vector<EventStruct>* pEventP = nullptr;
 	std::vector<EventStruct>* pEventC = nullptr;
+
+	static std::atomic<long long> cUid;
 };

@@ -1,6 +1,6 @@
 #include "Client.h"
 
-std::map<int, Client*> gClients;
+std::map<long long, Client*> gClients;
 
 Client::Client()
 {
@@ -21,21 +21,21 @@ void Client::CreateClient(bufferevent* e)
 {
 	Client* c = new Client;
 	c->InitSession(e);
-	int uid = ((BufferEventArg*)e->cbarg)->uid;
+	long long uid = ((EventStruct*)e->cbarg)->uid;
 	assert(gClients.find(uid) == gClients.end());
 	gClients[uid] = c;
 }
 
 void Client::DestroyClient(bufferevent *e)
 {
-	int uid = ((BufferEventArg*)e->cbarg)->uid;
+	long long uid = ((EventStruct*)e->cbarg)->uid;
 	auto it = gClients.find(uid);
 	if (it != gClients.end()) {
 		delete it->second;
 		gClients.erase(it);
 	}
 	if (e->cbarg) {
-		delete (BufferEventArg*)e->cbarg;
+		delete (EventStruct*)e->cbarg;
 		e->cbarg = nullptr;
 	}
 

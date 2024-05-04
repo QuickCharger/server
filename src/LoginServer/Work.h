@@ -1,8 +1,8 @@
 #pragma  once
 
 #include "./frame/common.h"
-#include "./frame/IRunnable.cc"
-#include "./frame/ProductConsume.cc"
+#include "./frame/IRunnable.h"
+#include "./frame/ProductConsume.h"
 
 class Work : IRunnable
 {
