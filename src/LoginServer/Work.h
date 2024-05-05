@@ -14,8 +14,8 @@ public:
 	int Stop();
 
 private:
-	std::vector<EventStruct>* pEventC = nullptr;
-	std::vector<EventStruct>* pEventP = nullptr;
+	std::vector<Event>* pEventC = nullptr;
+	std::vector<Event>* pEventP = nullptr;
 
 	CLibevent *net = nullptr;
 };

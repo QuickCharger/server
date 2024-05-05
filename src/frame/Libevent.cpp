@@ -100,13 +100,13 @@ void CLibevent::Close() {
 
 // 消费消息
 // 通常是 网络消息 供 使用者 读取
-void CLibevent::Consume(std::vector<EventStruct>** p) {
+void CLibevent::Consume(std::vector<Event>** p) {
 	*p = eventsFromNet.Comsumer(*p);
 }
 
 // 产生消息
 // 通常是 使用者 产生消息给 client 或 libevent
-void CLibevent::Product(std::vector<EventStruct>** p) {
+void CLibevent::Product(std::vector<Event>** p) {
 	// todo
 	*p = eventsFromUser.Productor(*p);
 }
@@ -134,11 +134,11 @@ long long CLibevent::GenUid() {
 struct bufferevent* CLibevent::genBEV(event_base* base, evutil_socket_t fd, int options)
 {
 	struct bufferevent *bev = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
-	EventStruct *arg = new EventStruct;
-	arg->bev = bev;
-	arg->that = this;
-	arg->uid = CLibevent::GenUid();
-	bufferevent_setcb(bev, CLibevent::socket_read_cb_static, CLibevent::socket_write_cb_static, CLibevent::socket_event_cb_static, arg);
+	BevInfo *info = new BevInfo;
+	info->bev = bev;
+	info->that = this;
+	info->uid = CLibevent::GenUid();
+	bufferevent_setcb(bev, CLibevent::socket_read_cb_static, CLibevent::socket_write_cb_static, CLibevent::socket_event_cb_static, info);
 	bufferevent_enable(bev, EV_READ | EV_WRITE);
 	return bev;
 }
@@ -155,44 +155,43 @@ int CLibevent::connectTo(struct bufferevent *bev, const std::string& ip, int por
 
 void CLibevent::updateFdState(struct bufferevent* bev, SocketState state)
 {
-	((EventStruct *)bev->cbarg)->state = state;
+	((BevInfo *)bev->cbarg)->state = state;
 }
 
 void CLibevent::onTimer1ms(evutil_socket_t, short, void*) {
 	this->pEventP = this->eventsFromNet.Productor(this->pEventP);
 	this->pEventC = this->eventsFromUser.Comsumer(this->pEventC);
 
-	for (auto it = pEventC->begin(); it != pEventC->end(); ++it) {
-		if (it->e == Event::SocketConnectTo) {
-			std::string ip = it->str1;
-			int port = it->i1;
-			long long uid = it->uid;
+	//for (auto it = pEventC->begin(); it != pEventC->end(); ++it) {
+	//	if (it->e == Event::Type::SocketConnectTo) {
+	//		std::string ip = it->str1;
+	//		int port = it->i1;
+	//		long long uid = it->uid;
 
-			struct bufferevent *bev = this->genBEV(base, -1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
-			((EventStruct *)bev->cbarg)->uid = uid;
-			bufferevent_incref(bev);
+	//		struct bufferevent *bev = this->genBEV(base, -1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
+	//		((BevInfo *)bev->cbarg)->uid = uid;
+	//		bufferevent_incref(bev);
 
-			updateFdState(bev, SocketState::Connecting);
+	//		updateFdState(bev, SocketState::Connecting);
 
-			EventStruct e;
-			e.bev = bev;
-			e.e = Event::RegBufferEvent;
-			e.uid = uid;
-			pEventP->push_back(std::move(e));
+	//		Event e;
+	//		e.e = Event::Type::RegBufferEvent;
+	//		e.uid = uid;
+	//		pEventP->push_back(std::move(e));
 
-			if (this->connectTo(bev, ip, port) != 0)
-			{
-				updateFdState(bev, SocketState::Err);
+	//		if (this->connectTo(bev, ip, port) != 0)
+	//		{
+	//			updateFdState(bev, SocketState::Err);
 
-				EventStruct e;
-				e.bev = bev;
-				e.e = Event::SocketConnectErr;
-				e.uid = uid;
-				pEventP->push_back(std::move(e));
-			}
-		}
-	}
-	pEventC->clear();
+	//			Event e;
+	//			e.bev = bev;
+	//			e.e = Event::SocketConnectErr;
+	//			e.uid = uid;
+	//			pEventP->push_back(std::move(e));
+	//		}
+	//	}
+	//}
+	//pEventC->clear();
 }
 
 void CLibevent::onTimer1s(evutil_socket_t, short, void*) {
@@ -210,9 +209,9 @@ void CLibevent::accept_conn_cb(struct evconnlistener *listener, evutil_socket_t 
 	bufferevent_incref(bev);
 
 	{
-		EventStruct e;
-		e.bev = bev;
-		e.e = Event::SocketAccept;
+		Event e;
+		e.e = Event::Type::SocketAccept;
+		e.p1 = bev;
 		pEventP->push_back(std::move(e));
 	}
 }
@@ -249,8 +248,8 @@ void CLibevent::socket_read_cb(struct bufferevent *bev, void *)
 	//evbuffer_copyout(input, ch, len);
 	evbuffer_remove(input, ch, len);
 
-	EventStruct e;
-	e.uid = ((EventStruct*)(bev->cbarg))->uid;
+	Event e;
+	e.uid = ((BevInfo*)(bev->cbarg))->uid;
 	e.e = Event::DataIn;
 	e.p1 = ch;
 	e.i1 = len;
@@ -260,11 +259,10 @@ void CLibevent::socket_read_cb(struct bufferevent *bev, void *)
 void CLibevent::socket_write_cb(struct bufferevent *bev, void *)
 {}
 
-void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *arg)
+void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *)
 {
-	EventStruct e;
-	e.bev = bev;
-	e.uid = ((EventStruct *)bev->cbarg)->uid;
+	Event e;
+	e.uid = ((BevInfo *)bev->cbarg)->uid;
 
 	struct evbuffer *input = bufferevent_get_input(bev);
 	int finished = 0;
@@ -288,12 +286,14 @@ void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *a
 	}
 	else if (a_events & BEV_EVENT_CONNECTED)
 	{
-		e.e = Event::SocketConnectSuccess;
+		e.e = Event::Type::SocketConnectSuccess;
 	}
 
 	if (finished == 1) {
-		e.e = Event::SocketErr;
+		e.e = Event::Type::SocketErr;
 		bufferevent_disable(bev, EV_READ | EV_WRITE);
+		delete (BevInfo*)bev->cbarg;
+		bev->cbarg = nullptr;
 	}
 
 	pEventP->push_back(std::move(e));
@@ -315,18 +315,18 @@ void CLibevent::accept_error_cb_static(struct evconnlistener *listener, void *ct
 
 void CLibevent::socket_read_cb_static(struct bufferevent *bev, void *arg)
 {
-	CLibevent* that = (CLibevent*)(((EventStruct*)arg)->that);
+	CLibevent* that = ((BevInfo*)arg)->that;
 	that->socket_read_cb(bev, arg);
 }
 
 void CLibevent::socket_write_cb_static(struct bufferevent *bev, void *arg)
 {
-	CLibevent* that = (CLibevent*)(((EventStruct*)arg)->that);
+	CLibevent* that = ((BevInfo*)arg)->that;
 	that->socket_write_cb(bev, arg);
 }
 
 void CLibevent::socket_event_cb_static(struct bufferevent *bev, short a_events, void *arg)
 {
-	CLibevent* that = (CLibevent*)(((EventStruct*)arg)->that);
+	CLibevent* that = ((BevInfo*)arg)->that;
 	that->socket_event_cb(bev, a_events, arg);
 }

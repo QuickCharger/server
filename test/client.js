@@ -10,19 +10,20 @@ let net = require('net')
 
 let [port, ip] = [12345, '127.0.0.1']
 
-// 运行时间 / 休息时间 秒
-let [runTime, sleepTime] = [10, 3]
-
 // 目标客户量 / 实际客户量
 let [targetClientCount, clientCount] = [999, 0]
 
 // 每次发送包的大小
 let packLen = 1000 * 1
 let packInterval = 10
+let sendTimes = -1		// 发送次数 如果达到此值则socket销毁 默认-1不销毁
 let chunk = '1234567890'.repeat(packLen / 10)
 
 // 统计
 let [cSend, cRecv] = [0, 0]
+
+// 运行时间 / 休息时间 秒
+let [runTime, sleepTime] = [10, 3]
 
 //----------------------------------------------------
 
@@ -32,12 +33,19 @@ let workState = 0
 let createClient = () => {
 	let fdWorking = false
 	let c = net.connect(port, ip)
+	let t = sendTimes
 
 	let timer = setInterval(() => {
 		if (!workState)
 			return
 		if (!fdWorking)
 			return
+		--t
+		if(t === 0) {
+			fdWorking = false
+			c.end()
+			return
+		}
 		c.write(chunk)
 		cSend += chunk.length
 	}, packInterval)

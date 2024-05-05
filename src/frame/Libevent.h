@@ -27,12 +27,29 @@
   AUTHOR
     2024/04/07 BDG INIT
 */
+
+enum class SocketState {
+	BLANK = 0,	// 占位
+	Connecting,	// 主动连接ing
+	Connected,	// 连接
+	Err,		// 错误发生
+	Closeing,	// 正常关闭ing 也就是处于四次握手
+	Closed,		// 
+};
+
+struct bufferevent;
 class CLibevent;
 
-//struct BufferEventArg {
-//	CLibevent* that = nullptr;
-//	long long uid = 0;
-//};
+// 确保plain
+// 这里的数据应该只在libevent线程内修改 另一个线程应只读
+// 确保数据尽可能只读 如果需要修改 则应先修改再添加事件给另一个线程
+struct BevInfo {
+	long long uid = 0;
+	bufferevent* bev = nullptr;
+	CLibevent* that = nullptr;
+	SocketState state = SocketState::BLANK;
+};
+
 
 class CLibevent : public IRunnable {
 public:
@@ -47,8 +64,8 @@ public:
 	int Stop();
 	void Close();
 
-	void Consume(std::vector<EventStruct>** p);
-	void Product(std::vector<EventStruct>** p);
+	void Consume(std::vector<Event>** p);
+	void Product(std::vector<Event>** p);
 
 public:
 	static void log(int severity, const char *msg);
@@ -78,11 +95,11 @@ public:
 private:
 	struct event_base *base = nullptr;
 
-	SafeBuffer<EventStruct> eventsFromNet;
-	SafeBuffer<EventStruct> eventsFromUser;
+	SafeBuffer<Event> eventsFromNet;
+	SafeBuffer<Event> eventsFromUser;
 
-	std::vector<EventStruct>* pEventP = nullptr;
-	std::vector<EventStruct>* pEventC = nullptr;
+	std::vector<Event>* pEventP = nullptr;
+	std::vector<Event>* pEventC = nullptr;
 
 	static std::atomic<long long> cUid;
 };

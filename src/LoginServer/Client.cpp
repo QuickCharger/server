@@ -21,24 +21,22 @@ void Client::CreateClient(bufferevent* e)
 {
 	Client* c = new Client;
 	c->InitSession(e);
-	long long uid = ((EventStruct*)e->cbarg)->uid;
+	long long uid = ((Event*)e->cbarg)->uid;
 	assert(gClients.find(uid) == gClients.end());
 	gClients[uid] = c;
 }
 
-void Client::DestroyClient(bufferevent *e)
+void Client::DestroyClient(long long uid)
 {
-	long long uid = ((EventStruct*)e->cbarg)->uid;
 	auto it = gClients.find(uid);
 	if (it != gClients.end()) {
 		delete it->second;
 		gClients.erase(it);
 	}
-	if (e->cbarg) {
-		delete (EventStruct*)e->cbarg;
-		e->cbarg = nullptr;
-	}
-
+	//if (e->cbarg) {
+	//	delete (EventStruct*)e->cbarg;
+	//	e->cbarg = nullptr;
+	//}
 }
 
 void Client::InitSession(bufferevent* e) {

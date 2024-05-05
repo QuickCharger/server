@@ -3,39 +3,26 @@
 #include <mutex>
 #include <vector>
 
-enum class Event {
-	BLANK = 0,	// 占位
-	SocketAccept = 1,	// server
-	DataIn,
-	SocketErr,
-	Close,
-	SocketConnectTo,	// client
-	SocketConnectErr,
-	SocketConnectSuccess,
-	RegBufferEvent,		// 给socket添加bufferevent
-};
-
-enum class SocketState {
-	BLANK = 0,	// 占位
-	Connecting,	// 主动连接ing
-	Connected,	// 连接
-	Err,		// 错误发生
-	Closeing,	// 正常关闭ing 也就是处于四次握手
-	Closed,		// 
-};
-
 struct bufferevent;
 
 // 确保plain
-struct EventStruct {
-	// libevent侧数据
-	bufferevent* bev = nullptr;
-	void* that = nullptr;
-	long long uid = 0;
-	Event e = Event::BLANK;
-	SocketState state = SocketState::BLANK;
+struct Event {
+	enum Type {
+		BLANK = 0,			// 占位
+		SocketAccept = 1,	// server
+		DataIn,
+		SocketErr,
+		Close,
+		SocketConnectTo,	// client
+		SocketConnectErr,
+		SocketConnectSuccess,
+		RegBufferEvent,		// 给socket添加bufferevent
+	};
 
-	// 用户侧数据
+
+	long long uid = 0;
+	Type e = Type::BLANK;
+
 	void* p1 = nullptr;
 	void* p2 = nullptr;
 	long long l1 = 0;
@@ -47,6 +34,7 @@ struct EventStruct {
 };
 
 // 三个buffer 一个生产者 一个消费者 轮流切换到 闲置buffer
+// 有缺陷 只有当生产者不停调用Productor时 才能确保生产者手中最后的数据被消费者拿到 todo
 template <class T>
 class SafeBuffer {
 public:
@@ -64,16 +52,23 @@ public:
 	// 消费者获取新的buffer
 	// 先消耗vComsum 再消耗v3rd 如此才能保证数据顺序！！！
 	std::vector<T>* Comsumer(std::vector<T>* p) {
+		//std::unique_lock<std::mutex> lck(mtx, std::try_to_lock);
 		std::unique_lock<std::mutex> lck(mtx);
-		if (p == nullptr) {
-			return vComsum;
-		}
-		if (p->size() > 0) {
-			return p;
-		}
-		if (v3rd->size() > 0) {
-			std::swap(v3rd, vComsum);
-			return vComsum;
+		//if (lck.owns_lock())
+		{ 
+			if (p == nullptr)
+			{
+				return vComsum;
+			}
+			if (p->size() > 0)
+			{
+				return p;
+			}
+			if (v3rd->size() > 0)
+			{
+				std::swap(v3rd, vComsum);
+				return vComsum;
+			}
 		}
 		return p;
 	}
@@ -81,14 +76,20 @@ public:
 	// 生产者获取新的buffer
 	// 先写入vProduct 只有当v3rd为空时 才交换 如此才能保证数据顺序！！！
 	std::vector<T>* Productor(std::vector<T>*p) {
+		//std::unique_lock<std::mutex> lck(mtx, std::try_to_lock);
 		std::unique_lock<std::mutex> lck(mtx);
-		// 获取新的buffer 
-		if (p == nullptr) {
-			return vProduct;
-		}
-		if (v3rd->size() == 0) {
-			std::swap(v3rd, vProduct);
-			return vProduct;
+		//if (lck.owns_lock())
+		{
+			// 获取新的buffer 
+			if (p == nullptr)
+			{
+				return vProduct;
+			}
+			if (v3rd->size() == 0)
+			{
+				std::swap(v3rd, vProduct);
+				return vProduct;
+			}
 		}
 		return p;
 	}

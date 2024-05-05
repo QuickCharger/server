@@ -10,7 +10,7 @@ public:
 	Client();
 	virtual ~Client();
 	static void CreateClient(bufferevent*);
-	static void DestroyClient(bufferevent*);
+	static void DestroyClient(long long uid);
 
 	void InitSession(bufferevent*);
 
