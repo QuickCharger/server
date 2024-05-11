@@ -14,7 +14,7 @@ let [port, ip] = [12345, '127.0.0.1']
 let [targetClientCount, clientCount] = [999, 0]
 
 // 每次发送包的大小
-let packLen = 1000 * 1
+let packLen = 1000 * 5
 let packInterval = 10
 let sendTimes = -1		// 发送次数 如果达到此值则socket销毁 默认-1不销毁
 let chunk = '1234567890'.repeat(packLen / 10)

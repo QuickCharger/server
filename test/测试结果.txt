@@ -9,6 +9,15 @@ client.js server.js 自测
 	极限 packLen = 1000 * 8 速度 5.3G/10s 无丢包
 	极限 packLen = 1000 * 9 速度 5.7G/10s 无丢包
 
+  hw虚拟机下 2c2g
+	极限 packLen = 1000 * 2 速度 1.9G/10s 无丢包
+	极限 packLen = 1000 * 3 速度 2.8G/10s 无丢包
+	极限 packLen = 1000 * 4 速度 3.8G/10s 无丢包
+	极限 packLen = 1000 * 5 速度 4.8G/10s 无丢包
+	极限 packLen = 1000 * 6 速度 5.5G/10s 无丢包 有明显性能下降
+	极限 packLen = 1000 * 7 速度 6.5G/10s 无丢包
+	极限 packLen = 1000 * 8 速度 6.9G/10s 无丢包
+
 debug io 2G ok
 debug io 2.1G ok
 
