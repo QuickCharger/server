@@ -162,36 +162,38 @@ void CLibevent::onTimer1ms(evutil_socket_t, short, void*) {
 	this->pEventP = this->eventsFromNet.Productor(this->pEventP);
 	this->pEventC = this->eventsFromUser.Comsumer(this->pEventC);
 
-	//for (auto it = pEventC->begin(); it != pEventC->end(); ++it) {
-	//	if (it->e == Event::Type::SocketConnectTo) {
-	//		std::string ip = it->str1;
-	//		int port = it->i1;
-	//		long long uid = it->uid;
+	for (auto it = pEventC->begin(); it != pEventC->end(); ++it) {
+		if (it->e == Event::Type::SocketConnectTo)
+		{
+			std::string ip = it->str1;
+			int port = it->i1;
+			long long uid = it->uid;
 
-	//		struct bufferevent *bev = this->genBEV(base, -1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
-	//		((BevInfo *)bev->cbarg)->uid = uid;
-	//		bufferevent_incref(bev);
+			struct bufferevent *bev = this->genBEV(base, -1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
+			((BevInfo *)bev->cbarg)->uid = uid;
+			bufferevent_incref(bev);
 
-	//		updateFdState(bev, SocketState::Connecting);
+			updateFdState(bev, SocketState::Connecting);
 
-	//		Event e;
-	//		e.e = Event::Type::RegBufferEvent;
-	//		e.uid = uid;
-	//		pEventP->push_back(std::move(e));
+			Event e;
+			e.e = Event::Type::RegBufferEvent;
+			e.uid = uid;
+			e.p1 = bev;
+			pEventP->push_back(std::move(e));
 
-	//		if (this->connectTo(bev, ip, port) != 0)
-	//		{
-	//			updateFdState(bev, SocketState::Err);
+			if (this->connectTo(bev, ip, port) != 0)
+			{
+				updateFdState(bev, SocketState::Err);
 
-	//			Event e;
-	//			e.bev = bev;
-	//			e.e = Event::SocketConnectErr;
-	//			e.uid = uid;
-	//			pEventP->push_back(std::move(e));
-	//		}
-	//	}
-	//}
-	//pEventC->clear();
+				Event e;
+				e.p1 = bev;
+				e.e = Event::SocketConnectErr;
+				e.uid = uid;
+				pEventP->push_back(std::move(e));
+			}
+		}
+	}
+	pEventC->clear();
 }
 
 void CLibevent::onTimer1s(evutil_socket_t, short, void*) {

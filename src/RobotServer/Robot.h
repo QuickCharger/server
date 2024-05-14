@@ -12,6 +12,8 @@ public:
 
 	void OnSession(Event& e);
 
+	void Desc();
+
 public:
 	long long uid = 0;
 	Session* m_session = nullptr;

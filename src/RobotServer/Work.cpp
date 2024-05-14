@@ -9,12 +9,17 @@
 std::string remoteIp = "127.0.0.1";
 int remotePort = 12346;
 
-int cMaxRobot = 999;
+int cMaxRobot = 10;
 int cCurRobot = 0;
 
-Work *work = new Work;
+enum TimerType {
+	eAddRobot = 1,
+};
+
+Work *gWork = new Work;
 
 Work::Work() {
+	pEventTodo = new std::vector<Event>;
 	RegThread(this);
 }
 
@@ -28,19 +33,25 @@ int Work::Init() {
 
 	CTimer::Init();
 
-	auto now = std::chrono::system_clock::now();
-	long long milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-	TimerCBArg arg;
-	arg.i1 = 1;
-	arg.i2 = 2;
-	arg.p1 = (void*)1234;
-	arg.p2 = (void*)2345;
-	CTimer::AddTimer(milliseconds, 1000, std::bind(&Work::OnTimer, this, std::placeholders::_1), std::move(arg), 5);
+	AddTimer(1, nullptr, nullptr, eAddRobot, 0, -1);
+
+
+	//auto now = std::chrono::system_clock::now();
+	//long long milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+	//TimerCBArg arg;
+	//arg.i1 = 1;
+	//arg.i2 = 2;
+	//arg.p1 = (void*)1234;
+	//arg.p2 = (void*)2345;
+	//CTimer::AddTimer(milliseconds, 1000, std::bind(&Work::OnTimer, this, std::placeholders::_1), std::move(arg), 5);
 	return 0;
 }
 
 int Work::Run() {
 	while (true) {
+
+		net->Consume(&pEventC);
+		net->Product(&pEventP);
 
 		auto now = std::chrono::system_clock::now();
 		long long milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
@@ -78,16 +89,31 @@ int Work::Stop() {
 }
 
 void Work::OnTimer(const TimerCBArg& arg) {
-	std::cout << __FUNCTION__ << " cur " << arg.cur << " i1 " << arg.i1 << " i2 " << arg.i2 << " p1 " << (int)arg.p1<< " p2 " << (int)arg.p2<< std::endl;
+	//std::cout << __FUNCTION__ << " cur " << arg.cur << " i1 " << arg.i1 << " i2 " << arg.i2 << " p1 " << (int)arg.p1<< " p2 " << (int)arg.p2<< std::endl;
+	int timerType = arg.i1;
+	if (timerType == TimerType::eAddRobot) {
+		addRobot();
+	}
 }
 
 void Work::OnTimer1ms(const TimerCBArg& arg) {
-	// 上机器人
+	net->Consume(&pEventC);
+	net->Product(&pEventP);
+}
+
+void Work::OnTimer1s(const TimerCBArg& arg) {
+	std::cout << __FUNCTION__ << " cur " << arg.cur << std::endl;
+}
+
+
+// 上机器人
+void Work::addRobot() {
 	if (cCurRobot < cMaxRobot) {
 		cCurRobot++;
 		Robot* r = new Robot();
 		r->uid = CLibevent::GenUid();
 		gRobots[r->uid] = r;
+		r->Desc();
 
 		Event e;
 		e.e = Event::SocketConnectTo;
@@ -100,10 +126,4 @@ void Work::OnTimer1ms(const TimerCBArg& arg) {
 	// 重连 todo
 
 
-	net->Consume(&pEventC);
-	net->Product(&pEventP);
-}
-
-void Work::OnTimer1s(const TimerCBArg& arg) {
-	std::cout << __FUNCTION__ << " cur " << arg.cur << std::endl;
 }

@@ -16,15 +16,21 @@ public:
 	int Run();
 	int Stop();
 
-	void OnTimer(const TimerCBArg& );
+	//void AddTimer(int waitms, void* p1, void* p2, int i1, int i2, int loopTimes = 1);
+	void OnTimer(const TimerCBArg&);
 	void OnTimer1ms(const TimerCBArg&);
-	void OnTimer1s(const TimerCBArg& );
+	void OnTimer1s(const TimerCBArg&);
+
+	void addRobot();
 
 private:
 	std::vector<Event>* pEventC = nullptr;
 	std::vector<Event>* pEventP = nullptr;
 
+	// 单线程内部使用
+	std::vector<Event>* pEventTodo = nullptr;
+
 	CLibevent *net = nullptr;
 };
 
-extern Work *work;
+extern Work *gWork;
