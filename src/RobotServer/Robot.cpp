@@ -1,6 +1,6 @@
 #include "Robot.h"
 
-std::map<int, Robot*> gRobots;
+std::map<long long, Robot*> gRobots;
 Robot::Robot() {
 
 }
@@ -8,25 +8,28 @@ Robot::Robot() {
 Robot::~Robot() {
 }
 
-void Robot::OnSession(EventStruct &e)
+void Robot::OnSession(Event &e)
 {
-	if (e.e == Event::RegBufferEvent) {
-		if (this->m_session)
-		{
-			delete this->m_session;
-			this->m_session = nullptr;
-		}
-		if (e.bev)
-		{
-			this->m_session = new Session(e.bev);
-		}
-	}
-	else if (e.e == Event::SocketConnectErr)
+	//if (e.e == Event::RegBufferEvent) {
+	//	if (this->m_session)
+	//	{
+	//		delete this->m_session;
+	//		this->m_session = nullptr;
+	//	}
+	//	if (e.bev)
+	//	{
+	//		this->m_session = new Session(e.bev);
+	//	}
+	//}
+	//else if (e.e == Event::SocketConnectErr)
+	//{
+	//	// 重连 todo
+	//}
+	if (false)
 	{
-		// 重连 todo
 	}
 	else if (e.e == Event::SocketConnectSuccess)
 	{
-		//
+		e.uid;
 	}
 }

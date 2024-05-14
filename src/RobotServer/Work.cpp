@@ -89,7 +89,7 @@ void Work::OnTimer1ms(const TimerCBArg& arg) {
 		r->uid = CLibevent::GenUid();
 		gRobots[r->uid] = r;
 
-		EventStruct e;
+		Event e;
 		e.e = Event::SocketConnectTo;
 		e.uid = r->uid;
 		e.str1 = remoteIp;

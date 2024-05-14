@@ -2,6 +2,7 @@
 
 #include "./frame/common.h"
 #include "./frame/IRunnable.h"
+#include "./frame/Libevent.h"
 #include "./frame/ProductConsume.h"
 
 #include "./frame/Timer.h"
@@ -20,8 +21,8 @@ public:
 	void OnTimer1s(const TimerCBArg& );
 
 private:
-	std::vector<EventStruct>* pEventC = nullptr;
-	std::vector<EventStruct>* pEventP = nullptr;
+	std::vector<Event>* pEventC = nullptr;
+	std::vector<Event>* pEventP = nullptr;
 
 	CLibevent *net = nullptr;
 };
