@@ -1,4 +1,5 @@
 #include "Robot.h"
+#include "Work.h"
 
 std::map<long long, Robot*> gRobots;
 Robot::Robot()
@@ -24,10 +25,13 @@ void Robot::OnSession(Event &e)
 			this->m_session = new Session(ev);
 		}
 	}
-	else if (e.e == Event::SocketConnectErr)
+	else if (e.e == Event::SocketConnectErr || e.e == Event::SocketErr)
 	{
 		bufferevent* ev = (bufferevent*)e.p1;
-		// ÖØÁ¬ todo
+		if (this->reConnect)
+		{
+			gWork->AddTimer(this->reConnectIntervalSec * 1000, this, nullptr, TimerType::eReconnect, 0, 1);
+		}
 	}
 	else if (e.e == Event::SocketConnectSuccess)
 	{
@@ -36,7 +40,24 @@ void Robot::OnSession(Event &e)
 	}
 }
 
-void Robot::Desc()
+void Robot::DoReconnect(const std::string& ip, int port)
 {
-	std::cout << "uid " << this->uid << ". session " << this->m_session << std::endl;
+	Event e;
+	e.e = Event::SocketConnectTo;
+	e.uid = uid;
+	e.str1 = ip;
+	e.i1 = port;
+	gWork->AddEvent(std::move(e));
+
+	this->Desc(__FUNCTION__);
+}
+
+void Robot::Desc(const char* format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	std::vfprintf(stdout, format, args);
+	va_end(args);
+	std::cout << "; uid " << this->uid << ". session " << this->m_session;
+	std::cout << std::endl;
 }

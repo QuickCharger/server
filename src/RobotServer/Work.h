@@ -7,6 +7,12 @@
 
 #include "./frame/Timer.h"
 
+enum TimerType {
+	eAddRobot = 1,
+	eConnect,
+	eReconnect,
+};
+
 class Work : public IRunnable, public CTimer
 {
 public:
@@ -15,6 +21,8 @@ public:
 	int Init();
 	int Run();
 	int Stop();
+
+	void AddEvent(Event&& e);
 
 	//void AddTimer(int waitms, void* p1, void* p2, int i1, int i2, int loopTimes = 1);
 	void OnTimer(const TimerCBArg&);
@@ -26,9 +34,6 @@ public:
 private:
 	std::vector<Event>* pEventC = nullptr;
 	std::vector<Event>* pEventP = nullptr;
-
-	// 单线程内部使用
-	std::vector<Event>* pEventTodo = nullptr;
 
 	CLibevent *net = nullptr;
 };

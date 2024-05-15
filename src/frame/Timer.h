@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <functional>
 #include <iostream>
 #include <list>
@@ -33,8 +34,8 @@ public:
 	};
 
 	void Init() {
-		auto now = std::chrono::system_clock::now();
-		long long milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+		auto tnow = std::chrono::system_clock::now();
+		long long milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(tnow.time_since_epoch()).count();
 		{
 			TimerCBArg arg;
 			addTimer(milliseconds, 1000, std::bind(&CTimer::OnTimer1ms, this, std::placeholders::_1), std::move(arg), -1);
@@ -103,8 +104,8 @@ public:
 
 	void AddTimer(int waitms, void* p1, void* p2, int i1, int i2, int loopTimes = 1)
 	{
-		auto now = std::chrono::system_clock::now();
-		long long milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+		auto tnow = std::chrono::system_clock::now();
+		long long milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(tnow.time_since_epoch()).count();
 		TimerCBArg arg;
 		arg.i1 = i1;
 		arg.i2 = i2;
@@ -134,5 +135,3 @@ public:
 private:
 	std::map<int, TimerArg> m;
 };
-
-int CTimer::TimerId = 0;

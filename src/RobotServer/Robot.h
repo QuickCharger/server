@@ -12,9 +12,12 @@ public:
 
 	void OnSession(Event& e);
 
-	void Desc();
+	void DoReconnect(const std::string& ip, int port);
+	void Desc(const char* format, ...);
 
 public:
+	bool reConnect = false;
+	int reConnectIntervalSec = 0;
 	long long uid = 0;
 	Session* m_session = nullptr;
 };
