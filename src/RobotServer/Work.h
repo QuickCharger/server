@@ -11,6 +11,9 @@ enum TimerType {
 	eAddRobot = 1,
 	eConnect,
 	eReconnect,
+	eStateSend,		// 发送数据
+	eStateStop,		// 停止发送数据
+	eDoSend,		// 尝试发送数据
 };
 
 class Work : public IRunnable, public CTimer

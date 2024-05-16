@@ -10,7 +10,7 @@ Robot::~Robot()
 {
 }
 
-void Robot::OnSession(Event &e)
+void Robot::OnEvent(Event &e)
 {
 	if (e.e == Event::RegBufferEvent)
 	{
@@ -40,6 +40,21 @@ void Robot::OnSession(Event &e)
 	}
 }
 
+void Robot::OnMsg(void *p, int len)
+{
+	// 机器人收到消息什么也不做 目前机器人只发收消息 并统计字数
+	char *pch = (char*)p;
+	delete pch;
+}
+
+int Robot::Send(char *p, int len)
+{
+	if (m_session == nullptr || !m_session->Working())
+		return 0;
+	m_session->Send(p, len);
+	return 1;
+}
+
 void Robot::DoReconnect(const std::string& ip, int port)
 {
 	Event e;
@@ -49,7 +64,7 @@ void Robot::DoReconnect(const std::string& ip, int port)
 	e.i1 = port;
 	gWork->AddEvent(std::move(e));
 
-	this->Desc(__FUNCTION__);
+	//this->Desc(__FUNCTION__);
 }
 
 void Robot::Desc(const char* format, ...)

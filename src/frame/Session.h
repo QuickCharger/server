@@ -22,6 +22,8 @@ public:
 	void Desc();
 	void FakeNews();
 
+	bool Working();
+
 public:
 	//int m_fd = 0;
 	char *m_ch = nullptr;

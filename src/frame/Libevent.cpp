@@ -286,9 +286,11 @@ void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *)
 		}
 		finished = 1;
 	}
+	// 主动链接成功后的消息
 	else if (a_events & BEV_EVENT_CONNECTED)
 	{
 		e.e = Event::Type::SocketConnectSuccess;
+		updateFdState(bev, SocketState::Connected);
 	}
 
 	if (finished == 1) {

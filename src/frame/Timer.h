@@ -38,7 +38,7 @@ public:
 		long long milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(tnow.time_since_epoch()).count();
 		{
 			TimerCBArg arg;
-			addTimer(milliseconds, 1000, std::bind(&CTimer::OnTimer1ms, this, std::placeholders::_1), std::move(arg), -1);
+			addTimer(milliseconds, 1, std::bind(&CTimer::OnTimer1ms, this, std::placeholders::_1), std::move(arg), -1);
 		}
 		{
 			TimerCBArg arg;
@@ -127,10 +127,22 @@ public:
 	virtual void OnTimer(const TimerCBArg& arg) { std::cout << __FUNCTION__ << std::endl; }
 
 	// 以下为内置timer 覆盖即可用
-	virtual void OnTimer1ms(const TimerCBArg& arg) { std::cout << __FUNCTION__ << std::endl; }
-	virtual void OnTimer1s(const TimerCBArg& arg) { std::cout << __FUNCTION__ << std::endl; }
-	virtual void OnTimer10s(const TimerCBArg& arg) { std::cout << __FUNCTION__ << std::endl; }
-	virtual void OnTimer100s(const TimerCBArg& arg) { std::cout << __FUNCTION__ << std::endl; }
+	virtual void OnTimer1ms(const TimerCBArg& arg)
+	{
+		//std::cout << __FUNCTION__ << std::endl;
+	}
+	virtual void OnTimer1s(const TimerCBArg& arg)
+	{
+		//std::cout << __FUNCTION__ << std::endl;
+	}
+	virtual void OnTimer10s(const TimerCBArg& arg)
+	{
+		//std::cout << __FUNCTION__ << std::endl;
+	}
+	virtual void OnTimer100s(const TimerCBArg& arg)
+	{
+		//std::cout << __FUNCTION__ << std::endl;
+	}
 
 private:
 	std::map<int, TimerArg> m;

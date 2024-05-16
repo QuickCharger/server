@@ -9,18 +9,15 @@
 std::string remoteIp = "127.0.0.1";
 int remotePort = 12345;
 
-int cMaxRobot = 10;
-int cCurRobot = 0;
-
 Work *gWork = new Work;
 
 
 // 目标客户量 / 实际客户量
-int targetClientCount = 999;
+int targetClientCount = 1000;
 int clientCount = 0;
 
 // 每次发送包的大小
-int packLen = 1000 * 5;
+int packLen = 1000 * 2;
 int packInterval = 10;
 int sendTimes = -1;		// 发送次数 如果达到此值则socket销毁 默认-1不销毁
 //std::string chunk;
@@ -33,6 +30,8 @@ int cRecv = 0;
 // 运行时间 / 休息时间 秒
 int runTime = 10;
 int sleepTime = 3;
+
+bool working = false;
 
 
 Work::Work() {
@@ -57,6 +56,8 @@ int Work::Init() {
 	CTimer::Init();
 
 	AddTimer(1, nullptr, nullptr, eAddRobot, 0, -1);
+	AddTimer(1000, nullptr, nullptr, eStateSend, 0, 1);
+	AddTimer(packInterval, nullptr, nullptr, eDoSend, 0, -1);
 
 
 	//auto now = std::chrono::system_clock::now();
@@ -84,13 +85,18 @@ int Work::Run() {
 		for (auto it = pEventC->begin(); it != pEventC->end(); ++it)
 		{
 			long long uid = it->uid;
-			Robot* r = gRobots.at(uid);
 			if (it->e == Event::RegBufferEvent
 				|| it->e == Event::SocketConnectErr
 				|| it->e == Event::SocketConnectSuccess
 				|| it->e == Event::SocketErr)
 			{
-				r->OnSession(*it);
+				Robot* r = gRobots.at(uid);
+				r->OnEvent(*it);
+			}
+			else if (it->e == Event::DataIn) {
+				long long uid = it->uid;
+				cRecv += it->i1;
+				gRobots[uid]->OnMsg(it->p1, it->i1);
 			}
 		}
 		pEventC->clear();
@@ -128,6 +134,34 @@ void Work::OnTimer(const TimerCBArg& arg) {
 		Robot* r = (Robot*)arg.p1;
 		r->DoReconnect(remoteIp, remotePort);
 	}
+	else if (timerType == TimerType::eStateSend)
+	{
+		working = true;
+		cSend = 0;
+		cRecv = 0;
+		AddTimer(1000 * runTime, nullptr, nullptr, eStateStop, 0, 1);
+	}
+	else if (timerType == TimerType::eStateStop)
+	{
+		working = false;
+		AddTimer(1000 * sleepTime, nullptr, nullptr, eStateSend, 0, 1);
+	}
+	else if (timerType == TimerType::eDoSend)
+	{
+		//auto tnow = std::chrono::system_clock::now();
+		//long long milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(tnow.time_since_epoch()).count();
+		//std::cout << milliseconds << std::endl;
+		if (!working)
+			return;
+		for (auto it : gRobots)
+		{
+			int l = it.second->Send(chunk, packLen);
+			if (l > 0)
+			{
+				cSend += packLen;
+			}
+		}
+	}
 }
 
 void Work::OnTimer1ms(const TimerCBArg& arg) {
@@ -136,20 +170,21 @@ void Work::OnTimer1ms(const TimerCBArg& arg) {
 }
 
 void Work::OnTimer1s(const TimerCBArg& arg) {
-	std::cout << __FUNCTION__ << " cur " << arg.cur << std::endl;
+	//std::cout << __FUNCTION__ << " cur " << arg.cur << std::endl;
+	std::cout << "diff " << cSend - cRecv << " send " << cSend << " recv " << cRecv << std::endl;
 }
 
 
 // 上机器人
 void Work::addRobot() {
-	if (cCurRobot < cMaxRobot) {
-		cCurRobot++;
+	if (clientCount < targetClientCount) {
+		clientCount++;
 		Robot* r = new Robot();
 		r->uid = CLibevent::GenUid();
 		r->reConnect = true;
 		r->reConnectIntervalSec = 1;
 		gRobots[r->uid] = r;
-		r->Desc(__FUNCTION__);
+		//r->Desc(__FUNCTION__);
 		r->DoReconnect(remoteIp, remotePort);
 	}
 }

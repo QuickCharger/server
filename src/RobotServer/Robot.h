@@ -10,8 +10,11 @@ public:
 	Robot();
 	virtual ~Robot();
 
-	void OnSession(Event& e);
+	void OnEvent(Event& e);
+	void OnMsg(void*, int);
 
+
+	int Send(char *p, int len);
 	void DoReconnect(const std::string& ip, int port);
 	void Desc(const char* format, ...);
 

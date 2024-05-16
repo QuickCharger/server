@@ -3,6 +3,7 @@
 #include <utility>
 #include <assert.h>
 #include "common.h"
+#include "Libevent.h"
 
 //int ClientCounter = 0;
 
@@ -117,4 +118,11 @@ void Session::FakeNews() {
 		m_ch = nullptr;
 		m_len = 0;
 	}
+}
+
+bool Session::Working()
+{
+	if (m_ev == nullptr)
+		return false;
+	return ((BevInfo *)m_ev->cbarg)->state == SocketState::Connected;
 }
