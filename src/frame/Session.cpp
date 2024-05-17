@@ -74,18 +74,23 @@ Session::~Session() {
 	//}
 	if (m_ch) {
 		delete m_ch;
+		CLibevent::cRecvBuf--;
 		m_ch = nullptr;
 	}
-	if (m_ev) {
+	if (m_ev)
+	{
 		//struct bufferevent_private2 *locking = BEV_UPCAST2(m_ev);
 		bufferevent_decref(m_ev);
+		CLibevent::cbufferevent_incref--;
 		m_ev = nullptr;
 	}
 }
 
 void Session::SetBufferEvent(bufferevent* e) {
-	if (m_ev) {
+	if (m_ev)
+	{
 		bufferevent_decref(m_ev);
+		CLibevent::cbufferevent_incref--;
 	}
 	m_ev = e;
 }
@@ -93,6 +98,7 @@ void Session::SetBufferEvent(bufferevent* e) {
 void Session::Append(char* ch, int len) {
 	if (m_ch) {
 		delete m_ch;
+		CLibevent::cRecvBuf--;
 	}
 	m_ch = ch;
 	m_len = len;
@@ -115,6 +121,7 @@ void Session::FakeNews() {
 	if (m_ch) {
 		Send(m_ch, m_len);
 		delete m_ch;
+		CLibevent::cRecvBuf--;
 		m_ch = nullptr;
 		m_len = 0;
 	}

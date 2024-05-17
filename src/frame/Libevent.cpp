@@ -8,6 +8,11 @@
 
 std::atomic<long long> CLibevent::cUid = 1;
 
+std::atomic<int> CLibevent::cBevInfo = 0;
+std::atomic<int> CLibevent::cRecvBuf = 0;
+std::atomic<int> CLibevent::cSession = 0;
+std::atomic<int> CLibevent::cbufferevent_incref = 0;
+
 int CLibevent::Init() {
 #ifdef WIN32
 	WSADATA wsaData;
@@ -135,6 +140,7 @@ struct bufferevent* CLibevent::genBEV(event_base* base, evutil_socket_t fd, int 
 {
 	struct bufferevent *bev = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
 	BevInfo *info = new BevInfo;
+	cBevInfo++;
 	info->bev = bev;
 	info->that = this;
 	info->uid = CLibevent::GenUid();
@@ -172,6 +178,7 @@ void CLibevent::onTimer1ms(evutil_socket_t, short, void*) {
 			struct bufferevent *bev = this->genBEV(base, -1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
 			((BevInfo *)bev->cbarg)->uid = uid;
 			bufferevent_incref(bev);
+			cbufferevent_incref++;
 
 			updateFdState(bev, SocketState::Connecting);
 
@@ -199,6 +206,9 @@ void CLibevent::onTimer1ms(evutil_socket_t, short, void*) {
 void CLibevent::onTimer1s(evutil_socket_t, short, void*) {
 	std::unique_lock<std::mutex> lck(ioMtx);
 	//std::cout << "OnTimer1s socket total " << cTotal << " living " << cLiving << std::endl;
+	std::cout << "BevInfo " << cBevInfo << " RecvBuf " << cRecvBuf << " Session " << cSession << " cbufferevent_incref " << cbufferevent_incref << std::endl;
+	//static std::atomic<int> cBevInfo;
+	//static std::atomic<int> cRecvBuf;
 }
 
 void CLibevent::accept_conn_cb(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *ctx)
@@ -209,6 +219,8 @@ void CLibevent::accept_conn_cb(struct evconnlistener *listener, evutil_socket_t 
 	// bev在session有引用
 	// 如果不提前incref 可能会出现session创建前bev就销毁 会崩溃
 	bufferevent_incref(bev);
+
+	cbufferevent_incref++;
 
 	{
 		Event e;
@@ -239,6 +251,7 @@ void CLibevent::socket_read_cb(struct bufferevent *bev, void *)
 
 	size_t len = evbuffer_get_length(input);
 	char *ch = new char[len] { 0 };
+	cRecvBuf++;
 
 	//SocketInfo *info = (SocketInfo*)ctx;
 	//info->total_drained += len;
@@ -297,6 +310,7 @@ void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *)
 		e.e = Event::Type::SocketErr;
 		bufferevent_disable(bev, EV_READ | EV_WRITE);
 		delete (BevInfo*)bev->cbarg;
+		cBevInfo--;
 		bev->cbarg = nullptr;
 	}
 

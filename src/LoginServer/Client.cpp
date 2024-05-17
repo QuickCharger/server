@@ -13,6 +13,7 @@ Client::~Client()
 	//m_bev = m_bev;
 	if (m_session) {
 		delete m_session;
+		CLibevent::cSession--;
 		m_session = nullptr;
 	}
 }
@@ -41,6 +42,7 @@ void Client::DestroyClient(long long uid)
 
 void Client::InitSession(bufferevent* e) {
 	this->m_session = new Session(e);
+	CLibevent::cSession++;
 }
 
 void Client::OnMsg(void *p, int len)

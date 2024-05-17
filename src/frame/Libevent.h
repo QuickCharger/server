@@ -102,4 +102,10 @@ private:
 	std::vector<Event>* pEventC = nullptr;
 
 	static std::atomic<long long> cUid;
+
+public:
+	static std::atomic<int> cBevInfo;
+	static std::atomic<int> cRecvBuf;
+	static std::atomic<int> cSession;
+	static std::atomic<int> cbufferevent_incref;
 };
