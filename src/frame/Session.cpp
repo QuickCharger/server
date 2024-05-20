@@ -73,7 +73,7 @@ Session::~Session() {
 	//	std::cout << "~Session destroy fd " << m_fd << std::endl;
 	//}
 	if (m_ch) {
-		delete m_ch;
+		delete[] m_ch;
 		CLibevent::cRecvBuf--;
 		m_ch = nullptr;
 	}
@@ -97,7 +97,7 @@ void Session::SetBufferEvent(bufferevent* e) {
 
 void Session::Append(char* ch, int len) {
 	if (m_ch) {
-		delete m_ch;
+		delete[] m_ch;
 		CLibevent::cRecvBuf--;
 	}
 	m_ch = ch;
@@ -120,7 +120,7 @@ void Session::Desc() {
 void Session::FakeNews() {
 	if (m_ch) {
 		Send(m_ch, m_len);
-		delete m_ch;
+		delete[] m_ch;
 		CLibevent::cRecvBuf--;
 		m_ch = nullptr;
 		m_len = 0;

@@ -6,12 +6,12 @@
 #include "event2/thread.h"
 #include "map"
 
-std::atomic<long long> CLibevent::cUid = 1;
+std::atomic<long long> CLibevent::cUid{ 1 };
 
-std::atomic<int> CLibevent::cBevInfo = 0;
-std::atomic<int> CLibevent::cRecvBuf = 0;
-std::atomic<int> CLibevent::cSession = 0;
-std::atomic<int> CLibevent::cbufferevent_incref = 0;
+std::atomic<int> CLibevent::cBevInfo{ 0 };
+std::atomic<int> CLibevent::cRecvBuf{ 0 };
+std::atomic<int> CLibevent::cSession{ 0 };
+std::atomic<int> CLibevent::cbufferevent_incref{ 0 };
 
 int CLibevent::Init() {
 #ifdef WIN32
@@ -35,7 +35,8 @@ int CLibevent::Init() {
 	event_set_log_callback(CLibevent::log);
 
 	this->base = event_base_new();
-	if (!this->base) {
+	if (!this->base)
+	{
 		puts("Couldn't open event base");
 		return -2;
 	}
@@ -46,19 +47,21 @@ int CLibevent::Init() {
 		event_add(timeout_event, &one_ms_delay);
 	}
 	{
-		struct timeval one_ms_delay = { 1, 0 };
+		struct timeval one_sec_delay = { 1, 0 };
 		struct event *timeout_event = event_new(this->base, -1, EV_PERSIST, [](evutil_socket_t fd, short event, void *arg) { ((CLibevent*)arg)->onTimer1s(fd, event, nullptr); }, this);
-		event_add(timeout_event, &one_ms_delay);
+		event_add(timeout_event, &one_sec_delay);
 	}
 
-	if (this->config.port > 0) {
+	if (this->config.port > 0)
+	{
 		Listen(this->config.port);
 	}
 
 	return 0;
 }
 
-int CLibevent::Listen(int port) {
+int CLibevent::Listen(int port)
+{
 	struct sockaddr_in sin;
 	memset(&sin, 0, sizeof(sin));
 	sin.sin_family = AF_INET;
@@ -168,7 +171,8 @@ void CLibevent::onTimer1ms(evutil_socket_t, short, void*) {
 	this->pEventP = this->eventsFromNet.Productor(this->pEventP);
 	this->pEventC = this->eventsFromUser.Comsumer(this->pEventC);
 
-	for (auto it = pEventC->begin(); it != pEventC->end(); ++it) {
+	for (auto it = pEventC->begin(); it != pEventC->end(); ++it)
+	{
 		if (it->e == Event::Type::SocketConnectTo)
 		{
 			std::string ip = it->str1;
@@ -207,8 +211,6 @@ void CLibevent::onTimer1s(evutil_socket_t, short, void*) {
 	std::unique_lock<std::mutex> lck(ioMtx);
 	//std::cout << "OnTimer1s socket total " << cTotal << " living " << cLiving << std::endl;
 	std::cout << "BevInfo " << cBevInfo << " RecvBuf " << cRecvBuf << " Session " << cSession << " cbufferevent_incref " << cbufferevent_incref << std::endl;
-	//static std::atomic<int> cBevInfo;
-	//static std::atomic<int> cRecvBuf;
 }
 
 void CLibevent::accept_conn_cb(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *ctx)
@@ -253,14 +255,6 @@ void CLibevent::socket_read_cb(struct bufferevent *bev, void *)
 	char *ch = new char[len] { 0 };
 	cRecvBuf++;
 
-	//SocketInfo *info = (SocketInfo*)ctx;
-	//info->total_drained += len;
-
-	{
-		//std::unique_lock<std::mutex> lck(ioMtx);
-		//std::cout << "libevent fd " << fd << " data in len" << len << std::endl;
-	}
-	//evbuffer_copyout(input, ch, len);
 	evbuffer_remove(input, ch, len);
 
 	Event e;
@@ -285,18 +279,13 @@ void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *)
 	if (a_events & BEV_EVENT_EOF)
 	{
 		size_t len = evbuffer_get_length(input);
-		{
-			//std::unique_lock<std::mutex> lck(ioMtx); 
-			//std::cout << "Got a close from " << inf->name << ". We drained " << inf->total_drained << " bytes from it, and have " << len << " left." << std::endl;
-		}
+		std::cout << __FUNCTION__ << " evBuf left size " << len << std::endl;
 		finished = 1;
 	}
 	else if (a_events & BEV_EVENT_ERROR)
 	{
-		{
-			std::unique_lock<std::mutex> lck(ioMtx);
-			//std::cout << "Got " << a_events<< " error from " << inf->name << " : " << evutil_socket_error_to_string(EVUTIL_SOCKET_ERROR()) << std::endl;
-		}
+		size_t len = evbuffer_get_length(input);
+		std::cout << __FUNCTION__ << " evBuf left size " << len << std::endl;
 		finished = 1;
 	}
 	// 主动链接成功后的消息
@@ -309,7 +298,7 @@ void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *)
 	if (finished == 1) {
 		e.e = Event::Type::SocketErr;
 		bufferevent_disable(bev, EV_READ | EV_WRITE);
-		delete (BevInfo*)bev->cbarg;
+		delete (BevInfo*)(bev->cbarg);
 		cBevInfo--;
 		bev->cbarg = nullptr;
 	}
