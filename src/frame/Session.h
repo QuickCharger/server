@@ -15,7 +15,7 @@ public:
 	Session(bufferevent* ev);
 	virtual ~Session();
 
-	void SetBufferEvent(bufferevent* e);
+	//void SetBufferEvent(bufferevent* e);
 
 	void Append(char* ch, int len);
 	void Send(char* ch, int len);

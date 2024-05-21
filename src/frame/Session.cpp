@@ -80,20 +80,32 @@ Session::~Session() {
 	if (m_ev)
 	{
 		//struct bufferevent_private2 *locking = BEV_UPCAST2(m_ev);
+		//int c = 0;
+		//int r = 0;
+		//do {
+		//	c++;
+		//	r = bufferevent_decref(m_ev);
+		//} while (r != 1);
+		//CLibevent::cbufferevent_incref--;
 		bufferevent_decref(m_ev);
-		CLibevent::cbufferevent_incref--;
 		m_ev = nullptr;
 	}
 }
 
-void Session::SetBufferEvent(bufferevent* e) {
-	if (m_ev)
-	{
-		bufferevent_decref(m_ev);
-		CLibevent::cbufferevent_incref--;
-	}
-	m_ev = e;
-}
+//void Session::SetBufferEvent(bufferevent* e) {
+//	if (m_ev)
+//	{
+//		//int c = 0;
+//		//int r = 0;
+//		//do {
+//		//	c++;
+//		//	r = bufferevent_decref(m_ev);
+//		//} while (r != 1);
+//		//CLibevent::cbufferevent_incref--;
+//		bufferevent_decref(m_ev);
+//	}
+//	m_ev = e;
+//}
 
 void Session::Append(char* ch, int len) {
 	if (m_ch) {

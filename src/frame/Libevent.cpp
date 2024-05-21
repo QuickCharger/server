@@ -181,8 +181,8 @@ void CLibevent::onTimer1ms(evutil_socket_t, short, void*) {
 
 			struct bufferevent *bev = this->genBEV(base, -1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
 			((BevInfo *)bev->cbarg)->uid = uid;
-			bufferevent_incref(bev);
-			cbufferevent_incref++;
+			//bufferevent_incref(bev);
+			//cbufferevent_incref++;
 
 			updateFdState(bev, SocketState::Connecting);
 
@@ -220,9 +220,8 @@ void CLibevent::accept_conn_cb(struct evconnlistener *listener, evutil_socket_t 
 	struct bufferevent *bev = this->genBEV(base, fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
 	// bev在session有引用
 	// 如果不提前incref 可能会出现session创建前bev就销毁 会崩溃
-	bufferevent_incref(bev);
-
-	cbufferevent_incref++;
+	//bufferevent_incref(bev);
+	//cbufferevent_incref++;
 
 	{
 		Event e;
@@ -279,13 +278,19 @@ void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *)
 	if (a_events & BEV_EVENT_EOF)
 	{
 		size_t len = evbuffer_get_length(input);
-		std::cout << __FUNCTION__ << " evBuf left size " << len << std::endl;
+		if (len > 0)
+		{
+			std::cout << __FUNCTION__ << " evBuf left size " << len << std::endl;
+		}
 		finished = 1;
 	}
 	else if (a_events & BEV_EVENT_ERROR)
 	{
 		size_t len = evbuffer_get_length(input);
-		std::cout << __FUNCTION__ << " evBuf left size " << len << std::endl;
+		if(len > 0)
+		{
+			std::cout << __FUNCTION__ << " evBuf left size " << len << std::endl;
+		}
 		finished = 1;
 	}
 	// 主动链接成功后的消息
@@ -305,9 +310,10 @@ void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *)
 
 	pEventP->push_back(std::move(e));
 
-	//if (finished) {
-	//	bufferevent_free(bev);
-	//}
+	if (finished) {
+		//bufferevent_decref(bev);
+		//bufferevent_free(bev);
+	}
 }
 
 void CLibevent::accept_conn_cb_static(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *ctx)
