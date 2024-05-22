@@ -17,9 +17,9 @@ int targetClientCount = 1000;
 int clientCount = 0;
 
 // 每次发送包的大小
-int packLen = 1000 * 2;
+int packLen = 1000 * 1;
 int packInterval = 10;
-int sendTimes = -1;		// 发送次数 如果达到此值则socket销毁 默认-1不销毁
+//int sendTimes = -1;		// 发送次数 如果达到此值则socket销毁 默认-1不销毁
 //std::string chunk;
 char *chunk = nullptr;
 
@@ -30,6 +30,7 @@ int cRecv = 0;
 // 运行时间 / 休息时间 秒
 int runTime = 10;
 int sleepTime = 3;
+bool bSleepLogout = true;
 
 bool working = false;
 
@@ -145,6 +146,10 @@ void Work::OnTimer(const TimerCBArg& arg) {
 	{
 		working = false;
 		AddTimer(1000 * sleepTime, nullptr, nullptr, eStateSend, 0, 1);
+		if (bSleepLogout)
+		{
+
+		}
 	}
 	else if (timerType == TimerType::eDoSend)
 	{
