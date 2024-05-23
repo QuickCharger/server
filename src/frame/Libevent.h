@@ -73,6 +73,7 @@ public:
 
 	// bufferevent µÄ²Ù×÷
 	struct bufferevent* genBEV(event_base* base, evutil_socket_t fd, int options);
+	int  delBEV(event_base* base, bufferevent* bev);
 	int  connectTo(struct bufferevent *bev, const std::string& ip, int port);
 	void updateFdState(struct bufferevent* bev, SocketState state);
 

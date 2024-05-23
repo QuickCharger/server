@@ -8,6 +8,11 @@ Robot::Robot()
 
 Robot::~Robot()
 {
+	if (m_session)
+	{
+		delete m_session;
+		m_session = nullptr;
+	}
 }
 
 void Robot::OnEvent(Event &e)
@@ -65,6 +70,18 @@ void Robot::DoReconnect(const std::string& ip, int port)
 	gWork->AddEvent(std::move(e));
 
 	//this->Desc(__FUNCTION__);
+}
+
+int Robot::DoLogout()
+{
+	if (m_session && m_session->m_ev)
+	{
+		Event e;
+		e.e = Event::SocketTryClose;
+		e.p1 = m_session->m_ev;
+		gWork->AddEvent(std::move(e));
+	}
+	return 0;
 }
 
 void Robot::Desc(const char* format, ...)

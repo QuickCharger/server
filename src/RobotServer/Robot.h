@@ -13,9 +13,9 @@ public:
 	void OnEvent(Event& e);
 	void OnMsg(void*, int);
 
-
-	int Send(char *p, int len);
+	int  Send(char *p, int len);
 	void DoReconnect(const std::string& ip, int port);
+	int  DoLogout();
 	void Desc(const char* format, ...);
 
 public:

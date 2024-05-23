@@ -86,18 +86,23 @@ int Work::Run() {
 		for (auto it = pEventC->begin(); it != pEventC->end(); ++it)
 		{
 			long long uid = it->uid;
+			auto itRbots = gRobots.find(uid);
+			if (itRbots == gRobots.end())
+			{
+				continue;
+			}
+			Robot* r = itRbots->second;
 			if (it->e == Event::RegBufferEvent
 				|| it->e == Event::SocketConnectErr
 				|| it->e == Event::SocketConnectSuccess
 				|| it->e == Event::SocketErr)
 			{
-				Robot* r = gRobots.at(uid);
 				r->OnEvent(*it);
 			}
-			else if (it->e == Event::DataIn) {
-				long long uid = it->uid;
+			else if (it->e == Event::DataIn)
+			{
 				cRecv += it->i1;
-				gRobots[uid]->OnMsg(it->p1, it->i1);
+				r->OnMsg(it->p1, it->i1);
 			}
 		}
 		pEventC->clear();
@@ -148,7 +153,7 @@ void Work::OnTimer(const TimerCBArg& arg) {
 		AddTimer(1000 * sleepTime, nullptr, nullptr, eStateSend, 0, 1);
 		if (bSleepLogout)
 		{
-
+			delRobotAll();
 		}
 	}
 	else if (timerType == TimerType::eDoSend)
@@ -167,6 +172,11 @@ void Work::OnTimer(const TimerCBArg& arg) {
 			}
 		}
 	}
+	else if (timerType == TimerType::eDoLogout)
+	{
+		int rid = arg.i2;
+		delRobot(rid);
+	}
 }
 
 void Work::OnTimer1ms(const TimerCBArg& arg) {
@@ -176,13 +186,23 @@ void Work::OnTimer1ms(const TimerCBArg& arg) {
 
 void Work::OnTimer1s(const TimerCBArg& arg) {
 	//std::cout << __FUNCTION__ << " cur " << arg.cur << std::endl;
-	std::cout << "diff " << cSend - cRecv << " send " << cSend << " recv " << cRecv << std::endl;
+	int maxId = 0;
+	for (auto it : gRobots)
+	{
+		if (it.second->uid > maxId)
+		{
+			maxId = (int)it.second->uid;
+		}
+	}
+	std::cout << "diff " << cSend - cRecv << " send " << cSend << " recv " << cRecv << " robot size " << gRobots.size() << " robot max id " << maxId <<  std::endl;
 }
 
 
 // 上机器人
-void Work::addRobot() {
-	if (clientCount < targetClientCount) {
+void Work::addRobot()
+{
+	if (clientCount < targetClientCount)
+	{
 		clientCount++;
 		Robot* r = new Robot();
 		r->uid = CLibevent::GenUid();
@@ -191,5 +211,22 @@ void Work::addRobot() {
 		gRobots[r->uid] = r;
 		//r->Desc(__FUNCTION__);
 		r->DoReconnect(remoteIp, remotePort);
+	}
+}
+
+void Work::delRobot(long long rid)
+{
+	gRobots[rid]->DoLogout();
+	delete gRobots[rid];
+	gRobots.erase(rid);
+	clientCount--;
+}
+
+void Work::delRobotAll()
+{
+	for (auto it : gRobots)
+	{
+		// 此处robotid可能截断 假设暂时不会发生
+		AddTimer(1, nullptr, nullptr, TimerType::eDoLogout, (int)it.first);
 	}
 }

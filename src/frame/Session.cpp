@@ -65,6 +65,7 @@
 Session::Session(bufferevent* ev) {
 	// 确保bufferevent已经在外部 bufferevent_incref
 	m_ev = ev;
+	bufferevent_incref(ev);
 }
 
 Session::~Session() {
@@ -79,14 +80,16 @@ Session::~Session() {
 	}
 	if (m_ev)
 	{
-		//struct bufferevent_private2 *locking = BEV_UPCAST2(m_ev);
-		//int c = 0;
-		//int r = 0;
-		//do {
-		//	c++;
-		//	r = bufferevent_decref(m_ev);
-		//} while (r != 1);
-		//CLibevent::cbufferevent_incref--;
+		//{
+		//	int c = 0;
+		//	int r = 0;
+		//	do {
+		//		c++;
+		//		r = bufferevent_decref(m_ev);
+		//	} while (r != 1);
+		//	CLibevent::cbufferevent_incref--;
+		//	std::cout << __FUNCTION__ << " c " << c << std::endl;
+		//}
 		bufferevent_decref(m_ev);
 		m_ev = nullptr;
 	}
@@ -141,7 +144,9 @@ void Session::FakeNews() {
 
 bool Session::Working()
 {
-	if (m_ev == nullptr)
+	if (m_ev == nullptr || m_ev->cbarg == nullptr)
+	{
 		return false;
+	}
 	return ((BevInfo *)m_ev->cbarg)->state == SocketState::Connected;
 }

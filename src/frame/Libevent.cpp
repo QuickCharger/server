@@ -152,6 +152,25 @@ struct bufferevent* CLibevent::genBEV(event_base* base, evutil_socket_t fd, int 
 	return bev;
 }
 
+int CLibevent::delBEV(event_base* base, bufferevent* bev)
+{
+	bufferevent_disable(bev, EV_READ | EV_WRITE);
+	delete (BevInfo*)(bev->cbarg);
+	cBevInfo--;
+	bev->cbarg = nullptr;
+	//{
+	//	int c = 0;
+	//	int r = 0;
+	//	do {
+	//		c++;
+	//		r = bufferevent_decref(bev);
+	//	} while (r != 1);
+	//	std::cout << "delBev c " << c << std::endl;
+	//}
+	bufferevent_decref(bev);
+	return 0;
+}
+
 int CLibevent::connectTo(struct bufferevent *bev, const std::string& ip, int port)
 {
 	struct sockaddr_in sin;
@@ -203,6 +222,11 @@ void CLibevent::onTimer1ms(evutil_socket_t, short, void*) {
 				pEventP->push_back(std::move(e));
 			}
 		}
+		else if (it->e == Event::Type::SocketTryClose)
+		{
+			struct bufferevent *bev = (bufferevent *)it->p1;
+			delBEV(base, bev);
+		}
 	}
 	pEventC->clear();
 }
@@ -210,7 +234,7 @@ void CLibevent::onTimer1ms(evutil_socket_t, short, void*) {
 void CLibevent::onTimer1s(evutil_socket_t, short, void*) {
 	std::unique_lock<std::mutex> lck(ioMtx);
 	//std::cout << "OnTimer1s socket total " << cTotal << " living " << cLiving << std::endl;
-	std::cout << "BevInfo " << cBevInfo << " RecvBuf " << cRecvBuf << " Session " << cSession << " cbufferevent_incref " << cbufferevent_incref << std::endl;
+	//std::cout << "BevInfo " << cBevInfo << " RecvBuf " << cRecvBuf << " Session " << cSession << " cbufferevent_incref " << cbufferevent_incref << std::endl;
 }
 
 void CLibevent::accept_conn_cb(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *ctx)
@@ -301,11 +325,8 @@ void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *)
 	}
 
 	if (finished == 1) {
+		delBEV(base, bev);
 		e.e = Event::Type::SocketErr;
-		bufferevent_disable(bev, EV_READ | EV_WRITE);
-		delete (BevInfo*)(bev->cbarg);
-		cBevInfo--;
-		bev->cbarg = nullptr;
 	}
 
 	pEventP->push_back(std::move(e));

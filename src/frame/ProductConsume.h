@@ -17,8 +17,8 @@ struct Event {
 		SocketConnectErr,
 		SocketConnectSuccess,
 		RegBufferEvent,		// 给socket添加bufferevent
+		SocketTryClose,		// socket 主动断开链接
 	};
-
 
 	long long uid = 0;
 	Type e = Type::BLANK;

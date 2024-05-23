@@ -14,6 +14,7 @@ enum TimerType {
 	eStateSend,		// 发送数据
 	eStateStop,		// 停止发送数据
 	eDoSend,		// 尝试发送数据
+	eDoLogout,
 };
 
 class Work : public IRunnable, public CTimer
@@ -33,6 +34,8 @@ public:
 	void OnTimer1s(const TimerCBArg&);
 
 	void addRobot();
+	void delRobot(long long);
+	void delRobotAll();
 
 private:
 	std::vector<Event>* pEventC = nullptr;
