@@ -20,6 +20,11 @@ Client::~Client()
 
 void Client::CreateClient(bufferevent* e)
 {
+	// libevent 可能会提早释放bev 如此可用cbarg判断，但不安全 依旧可能有bug
+	if (e->cbarg == nullptr)
+	{
+		return;
+	}
 	Client* c = new Client;
 	c->InitSession(e);
 	long long uid = ((Event*)e->cbarg)->uid;

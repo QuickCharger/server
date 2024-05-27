@@ -149,6 +149,9 @@ struct bufferevent* CLibevent::genBEV(event_base* base, evutil_socket_t fd, int 
 	info->uid = CLibevent::GenUid();
 	bufferevent_setcb(bev, CLibevent::socket_read_cb_static, CLibevent::socket_write_cb_static, CLibevent::socket_event_cb_static, info);
 	bufferevent_enable(bev, EV_READ | EV_WRITE);
+	// bev在session有引用
+	// 如果不提前incref 可能会出现session创建前bev就销毁 会crash
+	bufferevent_incref(bev);
 	return bev;
 }
 
@@ -167,7 +170,10 @@ int CLibevent::delBEV(event_base* base, bufferevent* bev)
 	//	} while (r != 1);
 	//	std::cout << "delBev c " << c << std::endl;
 	//}
-	bufferevent_decref(bev);
+	//bufferevent_decref(bev);
+	// bufferevent_incref bufferevent_decref 成对存在！！！
+	// 释放bev要执行 bufferevent_free 不要执行 bufferevent_decref （虽然free内部调用了decref但依旧做了额外清理工作）
+	bufferevent_free(bev);
 	return 0;
 }
 
@@ -330,11 +336,6 @@ void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *)
 	}
 
 	pEventP->push_back(std::move(e));
-
-	if (finished) {
-		//bufferevent_decref(bev);
-		//bufferevent_free(bev);
-	}
 }
 
 void CLibevent::accept_conn_cb_static(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *ctx)

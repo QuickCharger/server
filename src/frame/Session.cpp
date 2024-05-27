@@ -65,7 +65,7 @@
 Session::Session(bufferevent* ev) {
 	// 确保bufferevent已经在外部 bufferevent_incref
 	m_ev = ev;
-	bufferevent_incref(ev);
+	//bufferevent_incref(ev);
 }
 
 Session::~Session() {
