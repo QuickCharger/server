@@ -1,4 +1,5 @@
-#include "./frame/Session.h"
+#pragma once
+#include <map>
 
 // plain
 struct Msg {
@@ -9,18 +10,14 @@ class Client {
 public:
 	Client();
 	virtual ~Client();
-	static void CreateClient(bufferevent*);
+	static void CreateClient(long long uid);
 	static void DestroyClient(long long uid);
 
-	void InitSession(bufferevent*);
+	void OnMsg(char* ch, int len);
+	void Send(char* ch, int len);
 
-	void OnMsg(void*, int);
-
-	void FakeNews();
-
-public:
-	std::vector<std::string> m_unhandledMsg;	
-	Session* m_session = nullptr;
+private:
+	long long uid = 0;
 };
 
 extern std::map<long long, Client*> gClients;

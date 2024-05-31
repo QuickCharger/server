@@ -12,6 +12,7 @@
 #include <vector>
 #include <assert.h>
 #include <atomic>
+#include <map>
 
 #include <event2/listener.h>
 #include <event2/bufferevent.h>
@@ -47,7 +48,7 @@ struct BevInfo {
 	long long uid = 0;
 	bufferevent* bev = nullptr;
 	CLibevent* that = nullptr;
-	SocketState state = SocketState::BLANK;
+	//SocketState state = SocketState::BLANK;
 };
 
 
@@ -66,16 +67,17 @@ public:
 
 	void Consume(std::vector<Event>** p);
 	void Product(std::vector<Event>** p);
+	void ProductMsg(long long uid, Event::Type t, void* p1 = nullptr, void *p2 = nullptr, long long l1 = 0, long long l2 = 0, const std::string& str1 = "", const std::string& str2 = "");
 
 public:
 	static void log(int severity, const char *msg);
 	static long long GenUid();
 
 	// bufferevent µÄ²Ù×÷
-	struct bufferevent* genBEV(event_base* base, evutil_socket_t fd, int options);
+	struct bufferevent* genBEV(event_base* base, evutil_socket_t fd, int options, long long uid=0);
 	int  delBEV(event_base* base, bufferevent* bev);
 	int  connectTo(struct bufferevent *bev, const std::string& ip, int port);
-	void updateFdState(struct bufferevent* bev, SocketState state);
+	//void updateFdState(struct bufferevent* bev, SocketState state);
 
 	void onTimer1ms(evutil_socket_t, short, void*);
 	void onTimer1s(evutil_socket_t, short, void*);
@@ -101,6 +103,8 @@ private:
 
 	std::vector<Event>* pEventP = nullptr;
 	std::vector<Event>* pEventC = nullptr;
+
+	std::map<long long, bufferevent*> m;
 
 	static std::atomic<long long> cUid;
 

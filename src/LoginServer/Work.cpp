@@ -1,64 +1,79 @@
-#include "thread"
-#include "mutex"
-#include <csignal>
-#include "./frame/Session.h"
 #include "Work.h"
-#include "Client.h"
+#include <iostream>
+#include <thread>
+#include <mutex>
+#include <csignal>
 #include "./frame/Libevent.h"
+#include "Client.h"
 
-Work *work = new Work;
+Work *gWork = new Work;
 int port = 12345;
 
-Work::Work() {
-	RegThread(this);
+Work::Work()
+{
 }
 
-Work::~Work() {
+Work::~Work()
+{
 	// do nothing
 }
 
-int Work::Init() {
-	net = new CLibevent;
-	net->config.port = port;
-	RegThread(net);
-
-	net->Consume(&pEventC);
-	net->Product(&pEventP);
+int Work::OnInit()
+{
+	this->config.port = port;
 	return 0;
 }
 
-int Work::Run() {
-	while (true) {
-		net->Consume(&pEventC);
-		net->Product(&pEventP);
+int Work::OnRun()
+{
+	std::cout << __FUNCTION__ << std::endl;
+	return 0;
+}
 
-		// 处理net
-		for (auto it = pEventC->begin(); it != pEventC->end(); ++it) {
-			if (it->e == Event::SocketAccept) {
-				Client::CreateClient((bufferevent*)it->p1);
-			}
-			else if (it->e == Event::DataIn) {
-				long long uid = it->uid;
-				gClients[uid]->OnMsg(it->p1, it->i1);
-			}
-			else if (it->e == Event::SocketErr) {
-				Client::DestroyClient(it->uid);
-			}
-		}
-		pEventC->clear();
+int Work::OnStop()
+{
+	std::cout << __FUNCTION__ << std::endl;
+	return 0;
+}
 
-		// 处理该线程逻辑
-		{
-			// 处理个虚假的逻辑
-			for (auto &it : gClients) {
-				it.second->FakeNews();
-			}
-		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+int Work::OnNet_SocketAccept(long long uid)
+{
+	Client::CreateClient(uid);
+	return 0;
+}
+
+int Work::OnNet_DataIn(long long uid, char* ch, int len)
+{
+	auto c = gClients.find(uid);
+	assert(c != gClients.end());
+	if (c != gClients.end())
+	{
+		gClients[uid]->OnMsg(ch, len);
 	}
-}
-
-int Work::Stop() {
-	// todo
+	else
+	{
+		delete[]ch;
+	}
 	return 0;
 }
+
+int Work::OnNet_Err(long long uid)
+{
+	return 0;
+}
+
+int Work::OnNet_Close(long long uid)
+{
+	Client::DestroyClient(uid);
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+

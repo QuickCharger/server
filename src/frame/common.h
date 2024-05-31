@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "ProductConsume.h"
-#include "IRunnable.h"
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -18,5 +17,6 @@
 
 extern std::mutex ioMtx;
 
+class IRunnable;
 extern SafeBuffer<IRunnable*> *threadPC;
 extern void RegThread(IRunnable*);

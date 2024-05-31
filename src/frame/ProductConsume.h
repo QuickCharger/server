@@ -9,15 +9,17 @@ struct bufferevent;
 struct Event {
 	enum Type {
 		BLANK = 0,			// 占位
+		// 服务器
 		SocketAccept = 1,	// server
-		DataIn,
-		SocketErr,
-		Close,
-		SocketConnectTo,	// client
-		SocketConnectErr,
-		SocketConnectSuccess,
-		RegBufferEvent,		// 给socket添加bufferevent
-		SocketTryClose,		// socket 主动断开链接
+		// 客户端
+		ConnectTo,			// 客户端主动链接 主动发送 
+		ConnectSuccess,		// 主动链接成功， 如果失败发送Err
+		// 通用
+		DataIn,				// 接收数据
+		Err,
+		Close,				// socket 关闭了 数据应该都清理掉
+		TryClose,			// socket 主动断开链接 主动发送 
+		Send,				// 发送数据
 	};
 
 	long long uid = 0;
@@ -27,8 +29,8 @@ struct Event {
 	void* p2 = nullptr;
 	long long l1 = 0;
 	long long l2 = 0;
-	int i1 = 0;
-	int i2 = 0;
+	//int i1 = 0;
+	//int i2 = 0;
 	std::string str1;
 	std::string str2;
 };
@@ -51,11 +53,15 @@ public:
 
 	// 消费者获取新的buffer
 	// 先消耗vComsum 再消耗v3rd 如此才能保证数据顺序！！！
-	std::vector<T>* Comsumer(std::vector<T>* p) {
-		//std::unique_lock<std::mutex> lck(mtx, std::try_to_lock);
-		std::unique_lock<std::mutex> lck(mtx);
-		//if (lck.owns_lock())
-		{ 
+	std::vector<T>* Comsumer(std::vector<T>* p, bool wait = true)
+	{
+		// 强制 否则外部可能获得 nullptr
+		if (p == nullptr)
+			wait = true;
+
+		if (wait)
+		{
+			std::unique_lock<std::mutex> lck(mtx);
 			if (p == nullptr)
 			{
 				return vComsum;
@@ -69,26 +75,71 @@ public:
 				std::swap(v3rd, vComsum);
 				return vComsum;
 			}
+			return p;
 		}
-		return p;
+		else
+		{
+			std::unique_lock<std::mutex> lck(mtx, std::try_to_lock);
+			if (lck.owns_lock())
+			{
+				if (p == nullptr)
+				{
+					return vComsum;
+				}
+				if (p->size() > 0)
+				{
+					return p;
+				}
+				if (v3rd->size() > 0)
+				{
+					std::swap(v3rd, vComsum);
+					return vComsum;
+				}
+			}
+			return p;
+		}
 	}
 
 	// 生产者获取新的buffer
 	// 先写入vProduct 只有当v3rd为空时 才交换 如此才能保证数据顺序！！！
-	std::vector<T>* Productor(std::vector<T>*p) {
-		//std::unique_lock<std::mutex> lck(mtx, std::try_to_lock);
-		std::unique_lock<std::mutex> lck(mtx);
-		//if (lck.owns_lock())
+	std::vector<T>* Productor(std::vector<T>*p, bool wait = true)
+	{
+		// 强制 否则外部可能获得 nullptr
+		if (p == nullptr)
+			wait = true;
+
+		if (wait)
 		{
-			// 获取新的buffer 
-			if (p == nullptr)
+			std::unique_lock<std::mutex> lck(mtx);
 			{
-				return vProduct;
+				// 获取新的buffer 
+				if (p == nullptr)
+				{
+					return vProduct;
+				}
+				if (v3rd->size() == 0)
+				{
+					std::swap(v3rd, vProduct);
+					return vProduct;
+				}
 			}
-			if (v3rd->size() == 0)
+			return p;
+		}
+		else
+		{
+			std::unique_lock<std::mutex> lck(mtx, std::try_to_lock);
+			if (lck.owns_lock())
 			{
-				std::swap(v3rd, vProduct);
-				return vProduct;
+				// 获取新的buffer 
+				if (p == nullptr)
+				{
+					return vProduct;
+				}
+				if (v3rd->size() == 0)
+				{
+					std::swap(v3rd, vProduct);
+					return vProduct;
+				}
 			}
 		}
 		return p;

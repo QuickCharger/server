@@ -69,7 +69,8 @@ int CLibevent::Listen(int port)
 	sin.sin_port = htons(port);
 
 	struct evconnlistener *listener = evconnlistener_new_bind(base, CLibevent::accept_conn_cb_static, this, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1, (struct sockaddr*)&sin, sizeof(sin));
-	if (!listener) {
+	if (!listener)
+	{
 		perror("Couldn't create listener");
 		return 1;
 	}
@@ -113,67 +114,65 @@ void CLibevent::Consume(std::vector<Event>** p) {
 }
 
 // 产生消息
-// 通常是 使用者 产生消息给 client 或 libevent
+// 通常是 使用者 产生消息给 libevent
 void CLibevent::Product(std::vector<Event>** p) {
-	// todo
 	*p = eventsFromUser.Productor(*p);
+}
+
+void CLibevent::ProductMsg(long long uid, Event::Type t, void* p1, void *p2, long long l1, long long l2, const std::string& str1, const std::string& str2)
+{
+	Event e;
+	e.uid = uid;
+	e.e = t;
+	e.p1 = p1;
+	e.p2 = p2;
+	e.l1 = l1;
+	e.l2 = l2;
+	e.str1 = str1;
+	e.str2 = str2;
+	pEventP->push_back(std::move(e));
 }
 
 void CLibevent::log(int severity, const char *msg)
 {
-	{
-		std::unique_lock<std::mutex> lck(ioMtx);
-		std::cout << msg << std::endl;
-	}
-	//switch (severity) {
-	//case _EVENT_LOG_DEBUG: s = "debug"; break;
-	//case _EVENT_LOG_MSG:   s = "msg";   break;
-	//case _EVENT_LOG_WARN:  s = "warn";  break;
-	//case _EVENT_LOG_ERR:   s = "error"; break;
-	//default:               s = "?";     break; /* never reached */
-	//}
-	//fprintf(logfile, "[%s] %s\n", s, msg);
+	std::unique_lock<std::mutex> lck(ioMtx);
+	std::cout << msg << std::endl;
 }
 
-long long CLibevent::GenUid() {
+long long CLibevent::GenUid()
+{
 	return ++CLibevent::cUid;
 }
 
-struct bufferevent* CLibevent::genBEV(event_base* base, evutil_socket_t fd, int options)
+struct bufferevent* CLibevent::genBEV(event_base* base, evutil_socket_t fd, int options, long long uid)
 {
+	uid = uid == 0 ? CLibevent::GenUid() : uid;
 	struct bufferevent *bev = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
 	BevInfo *info = new BevInfo;
-	cBevInfo++;
 	info->bev = bev;
 	info->that = this;
-	info->uid = CLibevent::GenUid();
+	info->uid = uid;
 	bufferevent_setcb(bev, CLibevent::socket_read_cb_static, CLibevent::socket_write_cb_static, CLibevent::socket_event_cb_static, info);
 	bufferevent_enable(bev, EV_READ | EV_WRITE);
-	// bev在session有引用
-	// 如果不提前incref 可能会出现session创建前bev就销毁 会crash
-	bufferevent_incref(bev);
+	m[uid] = bev;
+	// 可以在此处发Event 与delBEV中的Event对应 但此处不能确定是主动链接还是被动链接 也许libevent线程不需要考虑这个？？？ todo
 	return bev;
 }
 
 int CLibevent::delBEV(event_base* base, bufferevent* bev)
 {
+	long long uid = ((BevInfo*)(bev->cbarg))->uid;
+	if (m.find(uid) != m.end())
+	{
+		std::cout << __FUNCTION__ << " " << uid << " should not happend" << std::endl;
+	}
+	assert(m.find(uid) != m.end());
 	bufferevent_disable(bev, EV_READ | EV_WRITE);
 	delete (BevInfo*)(bev->cbarg);
-	cBevInfo--;
 	bev->cbarg = nullptr;
-	//{
-	//	int c = 0;
-	//	int r = 0;
-	//	do {
-	//		c++;
-	//		r = bufferevent_decref(bev);
-	//	} while (r != 1);
-	//	std::cout << "delBev c " << c << std::endl;
-	//}
-	//bufferevent_decref(bev);
-	// bufferevent_incref bufferevent_decref 成对存在！！！
-	// 释放bev要执行 bufferevent_free 不要执行 bufferevent_decref （虽然free内部调用了decref但依旧做了额外清理工作）
 	bufferevent_free(bev);
+	m.erase(uid);
+	ProductMsg(uid, Event::Type::Close);
 	return 0;
 }
 
@@ -187,48 +186,35 @@ int CLibevent::connectTo(struct bufferevent *bev, const std::string& ip, int por
 	return bufferevent_socket_connect(bev, (struct sockaddr *)&sin, sizeof(sin));
 }
 
-void CLibevent::updateFdState(struct bufferevent* bev, SocketState state)
+void CLibevent::onTimer1ms(evutil_socket_t, short, void*)
 {
-	((BevInfo *)bev->cbarg)->state = state;
-}
-
-void CLibevent::onTimer1ms(evutil_socket_t, short, void*) {
 	this->pEventP = this->eventsFromNet.Productor(this->pEventP);
 	this->pEventC = this->eventsFromUser.Comsumer(this->pEventC);
 
+	long long uid = 0;
 	for (auto it = pEventC->begin(); it != pEventC->end(); ++it)
 	{
-		if (it->e == Event::Type::SocketConnectTo)
+		uid = it->uid;
+		if (it->e == Event::Type::Send)
 		{
-			std::string ip = it->str1;
-			int port = it->i1;
-			long long uid = it->uid;
-
-			struct bufferevent *bev = this->genBEV(base, -1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
-			((BevInfo *)bev->cbarg)->uid = uid;
-			//bufferevent_incref(bev);
-			//cbufferevent_incref++;
-
-			updateFdState(bev, SocketState::Connecting);
-
-			Event e;
-			e.e = Event::Type::RegBufferEvent;
-			e.uid = uid;
-			e.p1 = bev;
-			pEventP->push_back(std::move(e));
-
-			if (this->connectTo(bev, ip, port) != 0)
+			auto itBev = m.find(uid);
+			if (itBev != m.end())
 			{
-				updateFdState(bev, SocketState::Err);
-
-				Event e;
-				e.p1 = bev;
-				e.e = Event::SocketConnectErr;
-				e.uid = uid;
-				pEventP->push_back(std::move(e));
+				bufferevent_write(itBev->second, it->p1, (int)it->l1);
+			}
+			delete []it->p1;
+			cRecvBuf--;
+		}
+		else if (it->e == Event::Type::ConnectTo)
+		{
+			struct bufferevent *bev = this->genBEV(base, -1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE, uid);
+			if (this->connectTo(bev, it->str1, (int)it->l1) != 0)
+			{
+				ProductMsg(uid, Event::Type::Err);
+				delBEV(base, bev);
 			}
 		}
-		else if (it->e == Event::Type::SocketTryClose)
+		else if (it->e == Event::Type::TryClose)
 		{
 			struct bufferevent *bev = (bufferevent *)it->p1;
 			delBEV(base, bev);
@@ -238,7 +224,7 @@ void CLibevent::onTimer1ms(evutil_socket_t, short, void*) {
 }
 
 void CLibevent::onTimer1s(evutil_socket_t, short, void*) {
-	std::unique_lock<std::mutex> lck(ioMtx);
+	//std::unique_lock<std::mutex> lck(ioMtx);
 	//std::cout << "OnTimer1s socket total " << cTotal << " living " << cLiving << std::endl;
 	//std::cout << "BevInfo " << cBevInfo << " RecvBuf " << cRecvBuf << " Session " << cSession << " cbufferevent_incref " << cbufferevent_incref << std::endl;
 }
@@ -246,19 +232,8 @@ void CLibevent::onTimer1s(evutil_socket_t, short, void*) {
 void CLibevent::accept_conn_cb(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *ctx)
 {
 	struct event_base *base = evconnlistener_get_base(listener);
-
 	struct bufferevent *bev = this->genBEV(base, fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
-	// bev在session有引用
-	// 如果不提前incref 可能会出现session创建前bev就销毁 会崩溃
-	//bufferevent_incref(bev);
-	//cbufferevent_incref++;
-
-	{
-		Event e;
-		e.e = Event::Type::SocketAccept;
-		e.p1 = bev;
-		pEventP->push_back(std::move(e));
-	}
+	ProductMsg(((BevInfo*)(bev->cbarg))->uid, Event::Type::SocketAccept);
 }
 
 void CLibevent::accept_error_cb(struct evconnlistener *listener, void *ctx)
@@ -280,18 +255,14 @@ void CLibevent::socket_read_cb(struct bufferevent *bev, void *)
 	struct evbuffer *output = bufferevent_get_output(bev);
 	//evbuffer_add_buffer(output, input);
 
+	// runnable 或 libevent 可能不会正确delete 需要进一步处理 todo
 	size_t len = evbuffer_get_length(input);
 	char *ch = new char[len] { 0 };
 	cRecvBuf++;
 
 	evbuffer_remove(input, ch, len);
 
-	Event e;
-	e.uid = ((BevInfo*)(bev->cbarg))->uid;
-	e.e = Event::DataIn;
-	e.p1 = ch;
-	e.i1 = len;
-	pEventP->push_back(std::move(e));
+	ProductMsg(((BevInfo*)(bev->cbarg))->uid, Event::Type::DataIn, ch, nullptr, len);
 }
 
 void CLibevent::socket_write_cb(struct bufferevent *bev, void *)
@@ -299,9 +270,6 @@ void CLibevent::socket_write_cb(struct bufferevent *bev, void *)
 
 void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *)
 {
-	Event e;
-	e.uid = ((BevInfo *)bev->cbarg)->uid;
-
 	struct evbuffer *input = bufferevent_get_input(bev);
 	int finished = 0;
 
@@ -310,7 +278,7 @@ void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *)
 		size_t len = evbuffer_get_length(input);
 		if (len > 0)
 		{
-			std::cout << __FUNCTION__ << " evBuf left size " << len << std::endl;
+			std::cout << __FUNCTION__ << " BEV_EVENT_EOF evBuf left size " << len << std::endl;
 		}
 		finished = 1;
 	}
@@ -319,23 +287,20 @@ void CLibevent::socket_event_cb(struct bufferevent *bev, short a_events, void *)
 		size_t len = evbuffer_get_length(input);
 		if(len > 0)
 		{
-			std::cout << __FUNCTION__ << " evBuf left size " << len << std::endl;
+			std::cout << __FUNCTION__ << " BEV_EVENT_ERROR evBuf left size " << len << std::endl;
 		}
 		finished = 1;
+		ProductMsg(((BevInfo*)(bev->cbarg))->uid, Event::Type::Err);
 	}
 	// 主动链接成功后的消息
 	else if (a_events & BEV_EVENT_CONNECTED)
 	{
-		e.e = Event::Type::SocketConnectSuccess;
-		updateFdState(bev, SocketState::Connected);
+		ProductMsg(((BevInfo*)(bev->cbarg))->uid, Event::Type::ConnectSuccess);
 	}
 
 	if (finished == 1) {
 		delBEV(base, bev);
-		e.e = Event::Type::SocketErr;
 	}
-
-	pEventP->push_back(std::move(e));
 }
 
 void CLibevent::accept_conn_cb_static(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *ctx)
@@ -344,7 +309,8 @@ void CLibevent::accept_conn_cb_static(struct evconnlistener *listener, evutil_so
 	that->accept_conn_cb(listener, fd, address, socklen, nullptr);
 }
 
-void CLibevent::accept_error_cb_static(struct evconnlistener *listener, void *ctx) {
+void CLibevent::accept_error_cb_static(struct evconnlistener *listener, void *ctx)
+{
 	// todo
 }
 
