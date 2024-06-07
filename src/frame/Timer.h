@@ -114,6 +114,18 @@ public:
 		CTimer::addTimer(milliseconds, waitms, std::bind(&CTimer::OnTimer, this, std::placeholders::_1), std::move(arg), loopTimes);
 	}
 
+	void AddTimer(int waitms, std::function<void(const TimerCBArg &)> cb, void* p1, void* p2, int i1, int i2, int loopTimes = 1)
+	{
+		auto tnow = std::chrono::system_clock::now();
+		long long milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(tnow.time_since_epoch()).count();
+		TimerCBArg arg;
+		arg.i1 = i1;
+		arg.i2 = i2;
+		arg.p1 = p1;
+		arg.p2 = p2;
+		CTimer::addTimer(milliseconds, waitms, cb, std::move(arg), loopTimes);
+	}
+
 	bool DeleteTimer(int timerId)
 	{
 		auto it = m.find(timerId);

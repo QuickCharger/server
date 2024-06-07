@@ -22,6 +22,7 @@ int Runnable::Run()
 {
 	while (true)
 	{
+		this->OnRun();
 		net->Consume(&pEventC);
 		net->Product(&pEventP);
 

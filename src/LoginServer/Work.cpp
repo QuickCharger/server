@@ -26,7 +26,7 @@ int Work::OnInit()
 
 int Work::OnRun()
 {
-	std::cout << __FUNCTION__ << std::endl;
+	//std::cout << __FUNCTION__ << std::endl;
 	return 0;
 }
 

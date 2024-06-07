@@ -1,4 +1,7 @@
-#include "./frame/Session.h"
+#pragma once
+
+#include <map>
+#include <string>
 
 // plain
 struct Msg {
@@ -10,8 +13,10 @@ public:
 	Robot();
 	virtual ~Robot();
 
-	void OnEvent(Event& e);
-	void OnMsg(void*, int);
+	void OnConnectSuccess();
+	void OnDataIn(char*, int);
+	void OnErr();
+	void OnClose();
 
 	int  Send(char *p, int len);
 	void DoReconnect(const std::string& ip, int port);
@@ -22,7 +27,6 @@ public:
 	bool reConnect = false;
 	int reConnectIntervalSec = 0;
 	long long uid = 0;
-	Session* m_session = nullptr;
 };
 
 extern std::map<long long, Robot*> gRobots;

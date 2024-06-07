@@ -162,7 +162,7 @@ struct bufferevent* CLibevent::genBEV(event_base* base, evutil_socket_t fd, int 
 int CLibevent::delBEV(event_base* base, bufferevent* bev)
 {
 	long long uid = ((BevInfo*)(bev->cbarg))->uid;
-	if (m.find(uid) != m.end())
+	if (m.find(uid) == m.end())
 	{
 		std::cout << __FUNCTION__ << " " << uid << " should not happend" << std::endl;
 	}
@@ -195,9 +195,9 @@ void CLibevent::onTimer1ms(evutil_socket_t, short, void*)
 	for (auto it = pEventC->begin(); it != pEventC->end(); ++it)
 	{
 		uid = it->uid;
+		auto itBev = m.find(uid);
 		if (it->e == Event::Type::Send)
 		{
-			auto itBev = m.find(uid);
 			if (itBev != m.end())
 			{
 				bufferevent_write(itBev->second, it->p1, (int)it->l1);
@@ -216,8 +216,10 @@ void CLibevent::onTimer1ms(evutil_socket_t, short, void*)
 		}
 		else if (it->e == Event::Type::TryClose)
 		{
-			struct bufferevent *bev = (bufferevent *)it->p1;
-			delBEV(base, bev);
+			if (itBev != m.end())
+			{
+				delBEV(base, itBev->second);
+			}
 		}
 	}
 	pEventC->clear();
