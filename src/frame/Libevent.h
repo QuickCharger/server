@@ -111,6 +111,8 @@ private:
 public:
 	static std::atomic<int> cBevInfo;
 	static std::atomic<int> cRecvBuf;
+	static std::atomic<int> cSendBuf;
 	static std::atomic<int> cSession;
+	static std::atomic<int> cRobot;
 	static std::atomic<int> cbufferevent_incref;
 };

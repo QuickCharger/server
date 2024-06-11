@@ -18,7 +18,6 @@ void Robot::OnConnectSuccess()
 void Robot::OnDataIn(char*p, int len)
 {
 	// 机器人收到消息什么也不做 目前机器人只发收消息 并统计字数
-	delete []p;
 }
 
 void Robot::OnErr()

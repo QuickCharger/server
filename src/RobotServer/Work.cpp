@@ -27,7 +27,8 @@ int cRecv = 0;
 // 运行时间 / 休息时间 秒
 int runTime = 10;
 int sleepTime = 3;
-bool bSleepLogout = false;
+//bool bSleepLogout = false;
+bool bSleepLogout = true;
 
 bool working = false;
 
@@ -64,6 +65,8 @@ int Work::OnRun()
 
 int Work::OnStop()
 {
+	delete[]chunk;
+	chunk = nullptr;
 	return 0;
 }
 
@@ -102,6 +105,7 @@ void Work::OnTimer(const TimerCBArg& arg)
 		for (auto it : gRobots)
 		{
 			char* p = new char[packLen];
+			CLibevent::cSendBuf++;
 			memcpy(p, chunk, packLen);
 			int l = it.second->Send(p, packLen);
 			if (l > 0)
@@ -148,9 +152,13 @@ int Work::OnNet_DataIn(long long uid, char* ch, int len)
 	auto itRbots = gRobots.find(uid);
 	if (itRbots == gRobots.end())
 	{
+		delete[]ch;
+		CLibevent::cRecvBuf--;
 		return 0;
 	}
 	itRbots->second->OnDataIn(ch, len);
+	delete[]ch;
+	CLibevent::cRecvBuf--;
 	return 0;
 }
 
@@ -213,6 +221,7 @@ void Work::addRobot()
 	{
 		clientCount++;
 		Robot* r = new Robot();
+		CLibevent::cRobot++;
 		r->uid = CLibevent::GenUid();
 		r->reConnect = true;
 		r->reConnectIntervalSec = 1;
@@ -226,6 +235,7 @@ void Work::delRobot(long long rid)
 {
 	gRobots[rid]->DoLogout();
 	delete gRobots[rid];
+	CLibevent::cRobot--;
 	gRobots.erase(rid);
 	clientCount--;
 }

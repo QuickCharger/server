@@ -10,7 +10,9 @@ std::atomic<long long> CLibevent::cUid{ 1 };
 
 std::atomic<int> CLibevent::cBevInfo{ 0 };
 std::atomic<int> CLibevent::cRecvBuf{ 0 };
+std::atomic<int> CLibevent::cSendBuf{ 0 };
 std::atomic<int> CLibevent::cSession{ 0 };
+std::atomic<int> CLibevent::cRobot{ 0 };
 std::atomic<int> CLibevent::cbufferevent_incref{ 0 };
 
 int CLibevent::Init() {
@@ -149,6 +151,7 @@ struct bufferevent* CLibevent::genBEV(event_base* base, evutil_socket_t fd, int 
 	uid = uid == 0 ? CLibevent::GenUid() : uid;
 	struct bufferevent *bev = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
 	BevInfo *info = new BevInfo;
+	CLibevent::cBevInfo++;
 	info->bev = bev;
 	info->that = this;
 	info->uid = uid;
@@ -169,6 +172,7 @@ int CLibevent::delBEV(event_base* base, bufferevent* bev)
 	assert(m.find(uid) != m.end());
 	bufferevent_disable(bev, EV_READ | EV_WRITE);
 	delete (BevInfo*)(bev->cbarg);
+	CLibevent::cBevInfo--;
 	bev->cbarg = nullptr;
 	bufferevent_free(bev);
 	m.erase(uid);
@@ -203,7 +207,7 @@ void CLibevent::onTimer1ms(evutil_socket_t, short, void*)
 				bufferevent_write(itBev->second, it->p1, (int)it->l1);
 			}
 			delete []it->p1;
-			cRecvBuf--;
+			CLibevent::cSendBuf--;
 		}
 		else if (it->e == Event::Type::ConnectTo)
 		{
@@ -228,7 +232,7 @@ void CLibevent::onTimer1ms(evutil_socket_t, short, void*)
 void CLibevent::onTimer1s(evutil_socket_t, short, void*) {
 	//std::unique_lock<std::mutex> lck(ioMtx);
 	//std::cout << "OnTimer1s socket total " << cTotal << " living " << cLiving << std::endl;
-	//std::cout << "BevInfo " << cBevInfo << " RecvBuf " << cRecvBuf << " Session " << cSession << " cbufferevent_incref " << cbufferevent_incref << std::endl;
+	std::cout << "BevInfo " << cBevInfo << " RecvBuf " << cRecvBuf << " cSendBuf " << cSendBuf << " Session " << cSession << " cbufferevent_incref " << cbufferevent_incref << std::endl;
 }
 
 void CLibevent::accept_conn_cb(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *ctx)
@@ -260,7 +264,7 @@ void CLibevent::socket_read_cb(struct bufferevent *bev, void *)
 	// runnable 或 libevent 可能不会正确delete 需要进一步处理 todo
 	size_t len = evbuffer_get_length(input);
 	char *ch = new char[len] { 0 };
-	cRecvBuf++;
+	CLibevent::cRecvBuf++;
 
 	evbuffer_remove(input, ch, len);
 
