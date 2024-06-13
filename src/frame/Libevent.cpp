@@ -15,6 +15,8 @@ std::atomic<int> CLibevent::cSession{ 0 };
 std::atomic<int> CLibevent::cRobot{ 0 };
 std::atomic<int> CLibevent::cbufferevent_incref{ 0 };
 
+CMemPool<char> *po = new CMemPool<char>;
+
 int CLibevent::Init() {
 #ifdef WIN32
 	WSADATA wsaData;
@@ -81,7 +83,8 @@ int CLibevent::Listen(int port)
 	return 0;
 }
 
-int CLibevent::Run() {
+int CLibevent::Run()
+{
 	{
 		std::unique_lock<std::mutex> lck(ioMtx);
 		std::cout << __FUNCTION__ << std::endl;
@@ -206,7 +209,8 @@ void CLibevent::onTimer1ms(evutil_socket_t, short, void*)
 			{
 				bufferevent_write(itBev->second, it->p1, (int)it->l1);
 			}
-			delete []it->p1;
+			//delete []it->p1;
+			po->Release((char*)it->p1);
 			CLibevent::cSendBuf--;
 		}
 		else if (it->e == Event::Type::ConnectTo)
@@ -232,7 +236,7 @@ void CLibevent::onTimer1ms(evutil_socket_t, short, void*)
 void CLibevent::onTimer1s(evutil_socket_t, short, void*) {
 	//std::unique_lock<std::mutex> lck(ioMtx);
 	//std::cout << "OnTimer1s socket total " << cTotal << " living " << cLiving << std::endl;
-	std::cout << "BevInfo " << cBevInfo << " RecvBuf " << cRecvBuf << " cSendBuf " << cSendBuf << " Session " << cSession << " cbufferevent_incref " << cbufferevent_incref << std::endl;
+	//std::cout << "BevInfo " << cBevInfo << " RecvBuf " << cRecvBuf << " cSendBuf " << cSendBuf << " Session " << cSession << " cbufferevent_incref " << cbufferevent_incref << std::endl;
 }
 
 void CLibevent::accept_conn_cb(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *ctx)
@@ -263,7 +267,8 @@ void CLibevent::socket_read_cb(struct bufferevent *bev, void *)
 
 	// runnable 或 libevent 可能不会正确delete 需要进一步处理 todo
 	size_t len = evbuffer_get_length(input);
-	char *ch = new char[len] { 0 };
+	//char *ch = new char[len] { 0 };
+	char* ch = po->Acquire(len);
 	CLibevent::cRecvBuf++;
 
 	evbuffer_remove(input, ch, len);

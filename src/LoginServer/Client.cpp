@@ -35,21 +35,15 @@ void Client::DestroyClient(long long uid)
 void Client::OnMsg(char *p, int len)
 {
 	// fake news
+	char *p2 = po->Acquire(len);
+	memcpy(p2, p, len);
+	po->Release(p);
 	CLibevent::cRecvBuf--;
 	CLibevent::cSendBuf++;
-	// 此处不做重新赋值了
-	gWork->ProductMsg(uid, Event::Type::Send, p, nullptr, len);
-
-	//std::cout << (char*)p << std::endl;
-
-	//evutil_socket_t fd = bufferevent_getfd(m_bev);
-	//std::cout << fd << " send " << len << std::endl;
-	//bufferevent_write(m_bev, p, len);
+	gWork->ProductMsg(uid, Event::Type::Send, p2, nullptr, len);
 }
 
 void Client::Send(char* ch, int len)
 {
 
 }
-
-

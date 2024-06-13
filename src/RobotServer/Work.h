@@ -37,6 +37,7 @@ public:
 
 	virtual void OnTimer(const TimerCBArg&);
 	virtual void OnTimer1s(const TimerCBArg&);
+	virtual void OnTimer10s(const TimerCBArg&);
 
 	virtual int OnNet_ConnectSuccess(long long uid);
 	virtual int OnNet_DataIn(long long uid, char* ch, int len);

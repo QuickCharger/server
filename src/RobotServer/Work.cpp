@@ -10,6 +10,7 @@ int remotePort = 12345;
 
 Work *gWork = new Work;
 
+// 1k 0.01ms 1000个 => 100MB/s
 
 // 目标客户量 / 实际客户量
 int targetClientCount = 1000;
@@ -27,8 +28,8 @@ int cRecv = 0;
 // 运行时间 / 休息时间 秒
 int runTime = 10;
 int sleepTime = 3;
-//bool bSleepLogout = false;
-bool bSleepLogout = true;
+bool bSleepLogout = false;
+//bool bSleepLogout = true;
 
 bool working = false;
 
@@ -44,7 +45,7 @@ Work::~Work()
 int Work::OnInit()
 {
 	chunk = new char[packLen];
-	char *ch = "1234567890";
+	const char *ch = "1234567890";
 	for (int i = 0; i < packLen / 10; ++i)
 	{
 		memcpy(chunk + i * 10, ch, strlen(ch));
@@ -104,7 +105,8 @@ void Work::OnTimer(const TimerCBArg& arg)
 			return;
 		for (auto it : gRobots)
 		{
-			char* p = new char[packLen];
+			//char* p = new char[packLen];
+			char *p = po->Acquire(packLen);
 			CLibevent::cSendBuf++;
 			memcpy(p, chunk, packLen);
 			int l = it.second->Send(p, packLen);
@@ -135,6 +137,11 @@ void Work::OnTimer1s(const TimerCBArg& arg)
 	std::cout << "diff " << cSend - cRecv << " send " << cSend << " recv " << cRecv << " robot size " << gRobots.size() << " robot max id " << maxId << " clientCount " << clientCount << std::endl;
 }
 
+void Work::OnTimer10s(const TimerCBArg&)
+{
+	po->Desc();
+}
+
 int Work::OnNet_ConnectSuccess(long long uid)
 {
 	auto itRbots = gRobots.find(uid);
@@ -152,12 +159,14 @@ int Work::OnNet_DataIn(long long uid, char* ch, int len)
 	auto itRbots = gRobots.find(uid);
 	if (itRbots == gRobots.end())
 	{
-		delete[]ch;
+		//delete[]ch;
+		po->Release(ch);
 		CLibevent::cRecvBuf--;
 		return 0;
 	}
 	itRbots->second->OnDataIn(ch, len);
-	delete[]ch;
+	//delete[]ch;
+	po->Release(ch);
 	CLibevent::cRecvBuf--;
 	return 0;
 }

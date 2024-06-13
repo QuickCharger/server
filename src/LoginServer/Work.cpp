@@ -52,7 +52,8 @@ int Work::OnNet_DataIn(long long uid, char* ch, int len)
 	}
 	else
 	{
-		delete[]ch;
+		//delete[]ch;
+		po->Release(ch);
 	}
 	return 0;
 }

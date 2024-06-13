@@ -23,6 +23,10 @@ public:
 	{
 		//std::cout << __FUNCTION__ << std::endl;
 	}
+	virtual void OnTimer10s(const TimerCBArg&)
+	{
+		po->Desc();
+	}
 };
 
 extern Work *gWork;
